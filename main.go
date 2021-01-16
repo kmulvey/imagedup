@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/corona10/goimagehash"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -107,7 +107,6 @@ func main() {
 	handleErr(err)
 
 	files, err := listFiles(rootDir)
-	fmt.Println(len(files))
 	handleErr(err)
 
 	var threads = 4
