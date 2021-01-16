@@ -4,9 +4,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -20,6 +20,8 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type pair struct {
@@ -75,7 +77,11 @@ func main() {
 	}()
 	go publishStats()
 
-	var db, err = badger.Open(badger.DefaultOptions("checkpoints"))
+	var dbLogger = logrus.New()
+	dbLogger.SetLevel(log.WarnLevel)
+	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
+
+	var db, err = badger.Open(opts)
 	handleErr(err)
 	var valBytes []byte
 	err = db.View(func(txn *badger.Txn) error {
@@ -101,6 +107,7 @@ func main() {
 	handleErr(err)
 
 	files, err := listFiles(rootDir)
+	fmt.Println(len(files))
 	handleErr(err)
 
 	var threads = 4
@@ -141,7 +148,6 @@ func handleErr(err error) {
 		log.Fatal(err)
 	}
 }
-
 func listFiles(root string) ([]string, error) {
 	var allFiles []string
 	files, err := ioutil.ReadDir(root)
@@ -156,7 +162,7 @@ func listFiles(root string) ([]string, error) {
 			}
 			allFiles = append(allFiles, subFiles...)
 		} else {
-			if !strings.HasSuffix(file.Name(), ".mp4") && !strings.HasSuffix(file.Name(), ".png") {
+			if strings.HasSuffix(file.Name(), ".jpg") {
 				allFiles = append(allFiles, path.Join(root, file.Name()))
 			}
 		}
@@ -190,19 +196,15 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 		handleErr(err)
 
 		if distance == 0 {
-			oneStat, err := os.Stat(p.One)
+			oneDimensions, _, err := image.DecodeConfig(file1)
 			handleErr(err)
-			twoStat, err := os.Stat(p.Two)
+			twoDimensions, _, err := image.DecodeConfig(file2)
 			handleErr(err)
 
-			if oneStat.Size() > twoStat.Size() {
-				fmt.Println(oneStat.Name(), oneStat.Size(), "delete:", twoStat.Name(), twoStat.Size())
-				err = os.Rename(p.Two, path.Join(rootDir, "dups", twoStat.Name()))
-				handleErr(err)
+			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
+				fmt.Println("delete:", file2)
 			} else {
-				fmt.Println("delete:", oneStat.Name(), oneStat.Size(), twoStat.Name(), twoStat.Size())
-				err = os.Rename(p.One, path.Join(rootDir, "dups", oneStat.Name()))
-				handleErr(err)
+				fmt.Println("delete:", file1)
 			}
 		}
 		file1.Close()
@@ -237,7 +239,10 @@ func merge(cs ...chan struct{}) <-chan struct{} {
 }
 
 func cacheCheckpoint(checkpoints chan pair) {
-	var db, err = badger.Open(badger.DefaultOptions("checkpoints"))
+	var dbLogger = logrus.New()
+	dbLogger.SetLevel(log.WarnLevel)
+	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
+	var db, err = badger.Open(opts)
 	handleErr(err)
 	defer db.Close()
 
