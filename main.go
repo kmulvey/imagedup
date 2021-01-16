@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"image"
 	"image/jpeg"
 	"io/ioutil"
 	"net/http"
@@ -195,19 +194,27 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 		handleErr("distance", err)
 
 		if distance == 0 {
-			oneDimensions, _, err := image.DecodeConfig(file1)
+			file1.Seek(0, 0) // reset file reader
+			oneDimensions, err := jpeg.DecodeConfig(file1)
 			handleErr("DecodeConfig: "+file1.Name(), err)
-			twoDimensions, _, err := image.DecodeConfig(file2)
+			file2.Seek(0, 0)
+			twoDimensions, err := jpeg.DecodeConfig(file2)
 			handleErr("DecodeConfig: "+file2.Name(), err)
 
 			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
-				fmt.Println("delete:", file2)
+				fmt.Println("delete:", file2.Name())
+				fmt.Println(oneDimensions.Height, oneDimensions.Width, file1.Name())
+				fmt.Println(twoDimensions.Height, twoDimensions.Width, file2.Name())
 			} else {
-				fmt.Println("delete:", file1)
+				fmt.Println("delete:", file1.Name())
+				fmt.Println(twoDimensions.Height, twoDimensions.Width, file2.Name())
+				fmt.Println(oneDimensions.Height, oneDimensions.Width, file1.Name())
 			}
 		}
-		file1.Close()
-		file2.Close()
+		err = file1.Close()
+		handleErr("file close: "+file1.Name(), err)
+		err = file2.Close()
+		handleErr("file close: "+file1.Name(), err)
 
 		checkpoints <- p
 		diffTime.Set(float64(time.Since(start)))
