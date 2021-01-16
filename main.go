@@ -82,7 +82,7 @@ func main() {
 	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
 
 	var db, err = badger.Open(opts)
-	handleErr(err)
+	handleErr("badger open", err)
 	var valBytes []byte
 	err = db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("checkpoint"))
@@ -90,24 +90,24 @@ func main() {
 			valBytes = []byte("0 0")
 			return nil
 		}
-		handleErr(err)
+		handleErr("tnx get", err)
 
 		valBytes, err = item.ValueCopy(valBytes)
-		handleErr(err)
+		handleErr("Value copy", err)
 		return nil
 	})
-	handleErr(err)
+	handleErr("db view", err)
 
 	var valSlice = strings.Split(string(valBytes), " ")
 	startI, err := strconv.Atoi(valSlice[0])
-	handleErr(err)
+	handleErr("atoi: "+valSlice[0], err)
 	startJ, err := strconv.Atoi(valSlice[1])
-	handleErr(err)
+	handleErr("atoi: "+valSlice[1], err)
 	err = db.Close()
-	handleErr(err)
+	handleErr("db close", err)
 
 	files, err := listFiles(rootDir)
-	handleErr(err)
+	handleErr("listfiles", err)
 
 	var threads = 4
 	var checkpoints = make(chan pair)
@@ -142,9 +142,9 @@ func main() {
 	<-merge(doneChans...)
 }
 
-func handleErr(err error) {
+func handleErr(prefix string, err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
 	}
 }
 func listFiles(root string) ([]string, error) {
@@ -176,29 +176,29 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
-		handleErr(err)
+		handleErr("file open: "+file1.Name(), err)
 		file2, err := os.Open(p.Two)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
-		handleErr(err)
+		handleErr("file open: "+file1.Name(), err)
 
 		img1, err := jpeg.Decode(file1)
-		handleErr(err)
+		handleErr("jpeg.Decode: "+file1.Name(), err)
 		img2, err := jpeg.Decode(file2)
-		handleErr(err)
+		handleErr("jpeg.Decode: "+file2.Name(), err)
 		hash1, err := goimagehash.PerceptionHash(img1)
-		handleErr(err)
+		handleErr("PerceptionHash: "+file1.Name(), err)
 		hash2, err := goimagehash.PerceptionHash(img2)
-		handleErr(err)
+		handleErr("PerceptionHash: "+file2.Name(), err)
 		distance, err := hash1.Distance(hash2)
-		handleErr(err)
+		handleErr("distance", err)
 
 		if distance == 0 {
 			oneDimensions, _, err := image.DecodeConfig(file1)
-			handleErr(err)
+			handleErr("DecodeConfig: "+file1.Name(), err)
 			twoDimensions, _, err := image.DecodeConfig(file2)
-			handleErr(err)
+			handleErr("DecodeConfig: "+file2.Name(), err)
 
 			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
 				fmt.Println("delete:", file2)
@@ -242,24 +242,26 @@ func cacheCheckpoint(checkpoints chan pair) {
 	dbLogger.SetLevel(log.WarnLevel)
 	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
 	var db, err = badger.Open(opts)
-	handleErr(err)
-	defer db.Close()
+	handleErr("badger open", err)
 
 	txn := db.NewTransaction(true) // Read-write txn
 	var i int
 	for cp := range checkpoints {
 		i++
 		err = txn.Set([]byte("checkpoint"), []byte(strconv.Itoa(cp.I)+" "+strconv.Itoa(cp.J)))
-		handleErr(err)
+		handleErr("txn.set", err)
 
 		if i%50 == 0 {
 			err = txn.Commit()
-			handleErr(err)
+			handleErr("txn commit", err)
 			txn = db.NewTransaction(true)
 		}
 	}
 	err = txn.Commit()
-	handleErr(err)
+	handleErr("txn commit", err)
+
+	err = db.Close()
+	handleErr("db close", err)
 }
 
 func publishStats() {
