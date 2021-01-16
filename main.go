@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"image/jpeg"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -65,6 +67,20 @@ var (
 	)
 )
 
+var deleteLogger *logrus.Logger
+
+type DeleteLogFormatter struct {
+}
+
+func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	var buf = new(bytes.Buffer)
+	buf.WriteString(entry.Data["cmd"].(string))
+	buf.WriteString(fmt.Sprintf("\n%s: %s		", "big", entry.Data["big"].(string)))
+	buf.WriteString(fmt.Sprintf("%s: %s\n", "small", entry.Data["small"].(string)))
+
+	return buf.Bytes(), nil
+}
+
 func init() {
 	prometheus.MustRegister(diffTime)
 	prometheus.MustRegister(pairTotal)
@@ -72,6 +88,19 @@ func init() {
 	prometheus.MustRegister(gcTime)
 	prometheus.MustRegister(totalComparisons)
 	prometheus.MustRegister(comparisonsCompleted)
+
+	log.SetFormatter(&log.TextFormatter{})
+	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.SetOutput(file)
+	} else {
+		log.Info("Failed to log to file, using default stderr")
+		os.Exit(1)
+	}
+
+	deleteLogger = logrus.New()
+	deleteLogger.SetFormatter(new(DeleteLogFormatter))
+	deleteLogger.SetOutput(file)
 }
 
 func main() {
@@ -94,7 +123,8 @@ func main() {
 	// list all the files
 	var files, err = listFiles(rootDir)
 	handleErr("listfiles", err)
-	totalComparisons.Set(float64(len(files) * len(files)))
+	totalComparisons.Set(math.Pow(float64(len(files)), 2))
+	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
 	// spin up the diff workers
 	var threads = 4
@@ -107,6 +137,8 @@ func main() {
 		doneChans[i] = make(chan struct{})
 		go diff(rootDir, fileChans[i], checkpoints, doneChans[i])
 	}
+
+	fmt.Println("started, go to grafana to monitor")
 
 	// feed the files into the diff workers
 	var started bool
@@ -189,15 +221,23 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 			file2.Seek(0, 0)
 			twoDimensions, err := jpeg.DecodeConfig(file2)
 			handleErr("DecodeConfig: "+file2.Name(), err)
+			var oneStr = fmt.Sprintf("%d, %d, %s", oneDimensions.Height, oneDimensions.Width, file2.Name())
+			handleErr("printf: ", err)
+			var twoStr = fmt.Sprintf("%d, %d, %s", twoDimensions.Height, twoDimensions.Width, file2.Name())
+			handleErr("printf: ", err)
 
 			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
-				fmt.Println("rm ", file2.Name())
-				fmt.Println(oneDimensions.Height, oneDimensions.Width, file1.Name())
-				fmt.Printf("%d %d %s \n\n", twoDimensions.Height, twoDimensions.Width, file2.Name())
+				deleteLogger.WithFields(log.Fields{
+					"cmd":   "rm " + file2.Name(),
+					"big":   oneStr,
+					"small": twoStr,
+				}).Info("delete")
 			} else {
-				fmt.Println("rm", file1.Name())
-				fmt.Println(twoDimensions.Height, twoDimensions.Width, file2.Name())
-				fmt.Printf("%d %d %s \n\n", oneDimensions.Height, oneDimensions.Width, file1.Name())
+				deleteLogger.WithFields(log.Fields{
+					"cmd":   "rm " + file1.Name(),
+					"big":   twoStr,
+					"small": oneStr,
+				}).Info("delete")
 			}
 		}
 		err = file1.Close()
