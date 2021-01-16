@@ -53,6 +53,16 @@ var (
 			Name: "gc_op_total",
 		},
 	)
+	totalComparisons = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "total_comparisons",
+		},
+	)
+	comparisonsCompleted = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "comparisons_completed",
+		},
+	)
 )
 
 func init() {
@@ -60,6 +70,8 @@ func init() {
 	prometheus.MustRegister(pairTotal)
 	prometheus.MustRegister(gcOpTotal)
 	prometheus.MustRegister(gcTime)
+	prometheus.MustRegister(totalComparisons)
+	prometheus.MustRegister(comparisonsCompleted)
 }
 
 func main() {
@@ -107,6 +119,7 @@ func main() {
 
 	files, err := listFiles(rootDir)
 	handleErr("listfiles", err)
+	totalComparisons.Set(float64(len(files) * len(files)))
 
 	var threads = 4
 	var checkpoints = make(chan pair)
@@ -202,13 +215,13 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 			handleErr("DecodeConfig: "+file2.Name(), err)
 
 			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
-				fmt.Println("delete:", file2.Name())
+				fmt.Println("rm ", file2.Name())
 				fmt.Println(oneDimensions.Height, oneDimensions.Width, file1.Name())
-				fmt.Println(twoDimensions.Height, twoDimensions.Width, file2.Name())
+				fmt.Printf("%d %d %s \n\n", twoDimensions.Height, twoDimensions.Width, file2.Name())
 			} else {
-				fmt.Println("delete:", file1.Name())
+				fmt.Println("rm", file1.Name())
 				fmt.Println(twoDimensions.Height, twoDimensions.Width, file2.Name())
-				fmt.Println(oneDimensions.Height, oneDimensions.Width, file1.Name())
+				fmt.Printf("%d %d %s \n\n", oneDimensions.Height, oneDimensions.Width, file1.Name())
 			}
 		}
 		err = file1.Close()
@@ -218,6 +231,7 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 
 		checkpoints <- p
 		diffTime.Set(float64(time.Since(start)))
+		comparisonsCompleted.Inc()
 	}
 	close(done)
 }
