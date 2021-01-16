@@ -88,39 +88,15 @@ func main() {
 	}()
 	go publishStats()
 
-	var dbLogger = logrus.New()
-	dbLogger.SetLevel(log.WarnLevel)
-	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
+	// get points from where we left off last time
+	var startI, startJ = getCheckpoints()
 
-	var db, err = badger.Open(opts)
-	handleErr("badger open", err)
-	var valBytes []byte
-	err = db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte("checkpoint"))
-		if errors.Is(err, badger.ErrKeyNotFound) {
-			valBytes = []byte("0 0")
-			return nil
-		}
-		handleErr("tnx get", err)
-
-		valBytes, err = item.ValueCopy(valBytes)
-		handleErr("Value copy", err)
-		return nil
-	})
-	handleErr("db view", err)
-
-	var valSlice = strings.Split(string(valBytes), " ")
-	startI, err := strconv.Atoi(valSlice[0])
-	handleErr("atoi: "+valSlice[0], err)
-	startJ, err := strconv.Atoi(valSlice[1])
-	handleErr("atoi: "+valSlice[1], err)
-	err = db.Close()
-	handleErr("db close", err)
-
-	files, err := listFiles(rootDir)
+	// list all the files
+	var files, err = listFiles(rootDir)
 	handleErr("listfiles", err)
 	totalComparisons.Set(float64(len(files) * len(files)))
 
+	// spin up the diff workers
 	var threads = 4
 	var checkpoints = make(chan pair)
 	go cacheCheckpoint(checkpoints)
@@ -132,12 +108,12 @@ func main() {
 		go diff(rootDir, fileChans[i], checkpoints, doneChans[i])
 	}
 
+	// feed the files into the diff workers
 	var started bool
 	for i, one := range files {
 		for j, two := range files {
 			if !started {
 				if i == startI && j == startJ {
-					fmt.Println("picking up at", i, j)
 					started = true
 				} else {
 					continue
@@ -285,6 +261,38 @@ func cacheCheckpoint(checkpoints chan pair) {
 	handleErr("db close", err)
 }
 
+func getCheckpoints() (int, int) {
+	var dbLogger = logrus.New()
+	dbLogger.SetLevel(log.WarnLevel)
+	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
+
+	var db, err = badger.Open(opts)
+	handleErr("badger open", err)
+	var valBytes []byte
+	err = db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte("checkpoint"))
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			valBytes = []byte("0 0")
+			return nil
+		}
+		handleErr("tnx get", err)
+
+		valBytes, err = item.ValueCopy(valBytes)
+		handleErr("Value copy", err)
+		return nil
+	})
+	handleErr("db view", err)
+
+	var valSlice = strings.Split(string(valBytes), " ")
+	startI, err := strconv.Atoi(valSlice[0])
+	handleErr("atoi: "+valSlice[0], err)
+	startJ, err := strconv.Atoi(valSlice[1])
+	handleErr("atoi: "+valSlice[1], err)
+	err = db.Close()
+	handleErr("db close", err)
+
+	return startI, startJ
+}
 func publishStats() {
 	for {
 		var stats runtime.MemStats
