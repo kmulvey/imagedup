@@ -159,6 +159,10 @@ func main() {
 		}
 	}
 
+	for _, c := range fileChans {
+		close(c)
+	}
+
 	<-merge(doneChans...)
 }
 
