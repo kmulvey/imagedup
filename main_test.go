@@ -7,8 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/corona10/goimagehash"
-	"github.com/corona10/goimagehash/transforms"
+	corona "github.com/corona10/goimagehash"
+
+	"github.com/kmulvey/goimagehash"
+	"github.com/kmulvey/goimagehash/transforms"
 	"github.com/nfnt/resize"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/image/draw"
@@ -31,7 +33,22 @@ func TestDupNames(t *testing.T) {
 	}
 }
 
-func BenchmarkPerceptionHash(b *testing.B) {
+func BenchmarkCoronaPerceptionHash(b *testing.B) {
+
+	var file, err = os.Open("/home/kmulvey/Documents/Valeria Mavrin.jpg")
+	assert.NoError(b, err)
+
+	img, err := jpeg.Decode(file)
+	assert.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+		hash, err := corona.PerceptionHash(img)
+		assert.NoError(b, err)
+		assert.Equal(b, uint64(0x9c99caa3dc4a3476), hash.GetHash())
+	}
+}
+
+func BenchmarkMyPerceptionHash(b *testing.B) {
 
 	var file, err = os.Open("/home/kmulvey/Documents/Valeria Mavrin.jpg")
 	assert.NoError(b, err)
@@ -41,21 +58,6 @@ func BenchmarkPerceptionHash(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		hash, err := goimagehash.PerceptionHash(img)
-		assert.NoError(b, err)
-		assert.Equal(b, uint64(0x9c99caa3dc4a3476), hash.GetHash())
-	}
-}
-
-func BenchmarkNewHash(b *testing.B) {
-
-	var file, err = os.Open("/home/kmulvey/Documents/Valeria Mavrin.jpg")
-	assert.NoError(b, err)
-
-	img, err := jpeg.Decode(file)
-	assert.NoError(b, err)
-
-	for i := 0; i < b.N; i++ {
-		hash, err := Hash(img)
 		assert.NoError(b, err)
 		assert.Equal(b, uint64(0x9c994aa3de4a7076), hash.GetHash())
 	}
