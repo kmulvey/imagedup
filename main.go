@@ -148,6 +148,12 @@ func main() {
 		go diff(rootDir, fileChans[i], checkpoints, doneChans[i])
 	}
 
+	// db to store pairs that are alreay done
+	var dbLogger = logrus.New()
+	dbLogger.SetLevel(log.WarnLevel)
+	pairDB, err := badger.Open(badger.DefaultOptions("pairs").WithLogger(dbLogger))
+	handleErr("pairs db open", err)
+
 	fmt.Println("started, go to grafana to monitor")
 
 	// feed the files into the diff workers
@@ -163,8 +169,11 @@ func main() {
 			}
 
 			if i != j {
-				fileChans[j%threads] <- pair{One: one, Two: two, I: i, J: j}
-				pairTotal.Inc()
+				if !getPair(pairDB, one, two) {
+					fileChans[j%threads] <- pair{One: one, Two: two, I: i, J: j}
+					pairTotal.Inc()
+					setPair(pairDB, one, two)
+				}
 			}
 		}
 	}
@@ -172,6 +181,8 @@ func main() {
 	for _, c := range fileChans {
 		close(c)
 	}
+	err = pairDB.Close()
+	handleErr("close db", err)
 
 	<-merge(doneChans...)
 	fmt.Println(time.Since(start))
@@ -388,4 +399,32 @@ func Hash(img image.Image) (*goimagehash.ImageHash, error) {
 		}
 	}
 	return phash, nil
+}
+
+func getPair(db *badger.DB, file1, file2 string) bool {
+	var found bool
+	var err = db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get([]byte(file1 + file2))
+		if err == nil {
+			found = true
+		}
+		return nil
+
+	})
+	handleErr("txn.get", err)
+	return found
+}
+
+var empmtyByteSlice = make([]byte, 0)
+
+func setPair(db *badger.DB, file1, file2 string) {
+	txn := db.NewTransaction(true)
+
+	var err = txn.Set([]byte(file1+file2), empmtyByteSlice)
+	handleErr("txn.set", err)
+	err = txn.Set([]byte(file2+file1), empmtyByteSlice)
+	handleErr("txn.set", err)
+
+	err = txn.Commit()
+	handleErr("txn commit", err)
 }
