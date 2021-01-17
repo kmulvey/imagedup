@@ -5,10 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"io/ioutil"
 	"math"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path"
 	"runtime"
@@ -18,11 +20,14 @@ import (
 	"time"
 
 	"github.com/corona10/goimagehash"
+	"github.com/corona10/goimagehash/etcs"
+	"github.com/corona10/goimagehash/transforms"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/image/draw"
 )
 
 type pair struct {
@@ -104,6 +109,11 @@ func init() {
 }
 
 func main() {
+	var start = time.Now()
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	var rootDir string
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
 	flag.Parse()
@@ -127,7 +137,7 @@ func main() {
 	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
 	// spin up the diff workers
-	var threads = 4
+	var threads = 6
 	var checkpoints = make(chan pair)
 	go cacheCheckpoint(checkpoints)
 	var fileChans = make([]chan pair, threads)
@@ -164,6 +174,7 @@ func main() {
 	}
 
 	<-merge(doneChans...)
+	fmt.Println(time.Since(start))
 }
 
 func handleErr(prefix string, err error) {
@@ -211,14 +222,16 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 		handleErr("jpeg.Decode: "+file1.Name(), err)
 		img2, err := jpeg.Decode(file2)
 		handleErr("jpeg.Decode: "+file2.Name(), err)
-		hash1, err := goimagehash.PerceptionHash(img1)
+		//hash1, err := goimagehash.PerceptionHash(img1)
+		hash1, err := Hash(img1)
 		handleErr("PerceptionHash: "+file1.Name(), err)
-		hash2, err := goimagehash.PerceptionHash(img2)
+		//hash2, err := goimagehash.PerceptionHash(img2)
+		hash2, err := Hash(img2)
 		handleErr("PerceptionHash: "+file2.Name(), err)
 		distance, err := hash1.Distance(hash2)
 		handleErr("distance", err)
 
-		if distance == 0 {
+		if distance < 15 {
 			file1.Seek(0, 0) // reset file reader
 			oneDimensions, err := jpeg.DecodeConfig(file1)
 			handleErr("DecodeConfig: "+file1.Name(), err)
@@ -347,4 +360,32 @@ func publishStats() {
 
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func Hash(img image.Image) (*goimagehash.ImageHash, error) {
+	if img == nil {
+		return nil, errors.New("Image object can not be nil")
+	}
+
+	phash := goimagehash.NewImageHash(0, 2)
+
+	// resize
+	sr := img.Bounds()
+	dr := image.Rect(0, 0, 64, 64)
+	dst := image.NewRGBA(dr)
+	draw.NearestNeighbor.Scale(dst, dr, img, sr, draw.Src, nil)
+
+	// gray
+	pixels := transforms.Rgb2Gray(dst)
+
+	dct := transforms.DCT2D(pixels, 64, 64)
+	flattens := transforms.FlattenPixels(dct, 8, 8)
+	median := etcs.MedianOfPixels(flattens)
+
+	for idx, p := range flattens {
+		if p > median {
+			phash.LeftShiftSet(len(flattens) - idx - 1)
+		}
+	}
+	return phash, nil
 }
