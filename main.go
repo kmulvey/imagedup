@@ -225,7 +225,7 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 			file2.Seek(0, 0)
 			twoDimensions, err := jpeg.DecodeConfig(file2)
 			handleErr("DecodeConfig: "+file2.Name(), err)
-			var oneStr = fmt.Sprintf("%d, %d, %s", oneDimensions.Height, oneDimensions.Width, file2.Name())
+			var oneStr = fmt.Sprintf("%d, %d, %s", oneDimensions.Height, oneDimensions.Width, file1.Name())
 			handleErr("printf: ", err)
 			var twoStr = fmt.Sprintf("%d, %d, %s", twoDimensions.Height, twoDimensions.Width, file2.Name())
 			handleErr("printf: ", err)
