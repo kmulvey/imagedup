@@ -8,7 +8,6 @@ import (
 	"image"
 	"image/jpeg"
 	"io/ioutil"
-	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -133,7 +132,7 @@ func main() {
 	// list all the files
 	var files, err = listFiles(rootDir)
 	handleErr("listfiles", err)
-	totalComparisons.Set(math.Pow(float64(len(files)), 2))
+	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
 	// spin up the diff workers
@@ -233,11 +232,11 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 		handleErr("jpeg.Decode: "+file1.Name(), err)
 		img2, err := jpeg.Decode(file2)
 		handleErr("jpeg.Decode: "+file2.Name(), err)
-		//hash1, err := goimagehash.PerceptionHash(img1)
-		hash1, err := Hash(img1)
+		hash1, err := goimagehash.PerceptionHash(img1)
+		//hash1, err := Hash(img1)
 		handleErr("PerceptionHash: "+file1.Name(), err)
-		//hash2, err := goimagehash.PerceptionHash(img2)
-		hash2, err := Hash(img2)
+		hash2, err := goimagehash.PerceptionHash(img2)
+		//hash2, err := Hash(img2)
 		handleErr("PerceptionHash: "+file2.Name(), err)
 		distance, err := hash1.Distance(hash2)
 		handleErr("distance", err)
@@ -249,9 +248,9 @@ func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 			file2.Seek(0, 0)
 			twoDimensions, err := jpeg.DecodeConfig(file2)
 			handleErr("DecodeConfig: "+file2.Name(), err)
-			var oneStr = fmt.Sprintf("%d, %d, %s", oneDimensions.Height, oneDimensions.Width, file1.Name())
+			var oneStr = fmt.Sprintf("%d, %d, %d, %s", oneDimensions.Height, oneDimensions.Width, distance, file1.Name())
 			handleErr("printf: ", err)
-			var twoStr = fmt.Sprintf("%d, %d, %s", twoDimensions.Height, twoDimensions.Width, file2.Name())
+			var twoStr = fmt.Sprintf("%d, %d, %d, %s", twoDimensions.Height, twoDimensions.Width, distance, file2.Name())
 			handleErr("printf: ", err)
 
 			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
@@ -305,8 +304,7 @@ func merge(cs ...chan struct{}) <-chan struct{} {
 func cacheCheckpoint(checkpoints chan pair) {
 	var dbLogger = logrus.New()
 	dbLogger.SetLevel(log.WarnLevel)
-	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
-	var db, err = badger.Open(opts)
+	var db, err = badger.Open(badger.DefaultOptions("checkpoints").WithLogger(dbLogger))
 	handleErr("badger open", err)
 
 	txn := db.NewTransaction(true) // Read-write txn
@@ -332,10 +330,9 @@ func cacheCheckpoint(checkpoints chan pair) {
 func getCheckpoints() (int, int) {
 	var dbLogger = logrus.New()
 	dbLogger.SetLevel(log.WarnLevel)
-	var opts = badger.DefaultOptions("checkpoints").WithLogger(dbLogger)
-
-	var db, err = badger.Open(opts)
+	var db, err = badger.Open(badger.DefaultOptions("checkpoints").WithLogger(dbLogger))
 	handleErr("badger open", err)
+
 	var valBytes []byte
 	err = db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("checkpoint"))
