@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,7 +17,6 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
-	"github.com/kmulvey/goimagehash"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -65,6 +63,16 @@ var (
 			Name: "comparisons_completed",
 		},
 	)
+	imageCacheSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "image_cache_size_bytes",
+		},
+	)
+	imageCacheNumImages = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "image_cache_num_images",
+		},
+	)
 )
 
 var deleteLogger *logrus.Logger
@@ -88,6 +96,8 @@ func init() {
 	prometheus.MustRegister(gcTime)
 	prometheus.MustRegister(totalComparisons)
 	prometheus.MustRegister(comparisonsCompleted)
+	prometheus.MustRegister(imageCacheSize)
+	prometheus.MustRegister(imageCacheNumImages)
 
 	log.SetFormatter(&log.TextFormatter{})
 	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -120,7 +130,6 @@ func main() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Fatal(http.ListenAndServe(":5000", nil))
 	}()
-	go publishStats()
 
 	// get points from where we left off last time
 	var startI, startJ = getCheckpoints()
@@ -132,15 +141,17 @@ func main() {
 	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
 	// spin up the diff workers
-	var threads = 6
+	var threads = 24
 	var checkpoints = make(chan pair)
 	go cacheCheckpoint(checkpoints)
 	var fileChans = make([]chan pair, threads)
 	var doneChans = make([]chan struct{}, threads)
+	var hashCache = NewHashCache()
+	go publishStats(hashCache)
 	for i := 0; i < threads; i++ {
 		fileChans[i] = make(chan pair, 10)
 		doneChans[i] = make(chan struct{})
-		go diff(rootDir, fileChans[i], checkpoints, doneChans[i])
+		go diff(hashCache, rootDir, fileChans[i], checkpoints, doneChans[i])
 	}
 
 	// db to store pairs that are alreay done
@@ -210,61 +221,39 @@ func listFiles(root string) ([]string, error) {
 	return allFiles, nil
 }
 
-func diff(rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
+func diff(cache *hashCache, rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
 	for p := range pairs {
 		var start = time.Now()
-		file1, err := os.Open(p.One)
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		handleErr("file open: "+file1.Name(), err)
-		file2, err := os.Open(p.Two)
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		handleErr("file open: "+file1.Name(), err)
 
-		img1, err := jpeg.Decode(file1)
-		handleErr("jpeg.Decode: "+file1.Name(), err)
-		img2, err := jpeg.Decode(file2)
-		handleErr("jpeg.Decode: "+file2.Name(), err)
-		hash1, err := goimagehash.PerceptionHash(img1)
-		handleErr("PerceptionHash: "+file1.Name(), err)
-		hash2, err := goimagehash.PerceptionHash(img2)
-		handleErr("PerceptionHash: "+file2.Name(), err)
-		distance, err := hash1.Distance(hash2)
+		var imgCacheOne, err = cache.GetHash(p.One)
+		handleErr("get hash: "+p.One, err)
+
+		imgCacheTwo, err := cache.GetHash(p.Two)
+		handleErr("get hash: "+p.One, err)
+
+		distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
 		handleErr("distance", err)
 
 		if distance < 10 {
-			file1.Seek(0, 0) // reset file reader
-			oneDimensions, err := jpeg.DecodeConfig(file1)
-			handleErr("DecodeConfig: "+file1.Name(), err)
-			file2.Seek(0, 0)
-			twoDimensions, err := jpeg.DecodeConfig(file2)
-			handleErr("DecodeConfig: "+file2.Name(), err)
-			var oneStr = fmt.Sprintf("%d, %d, %d, %s", oneDimensions.Height, oneDimensions.Width, distance, file1.Name())
+			var oneStr = fmt.Sprintf("%d, %d, %d, %s", imgCacheOne.Config.Height, imgCacheOne.Config.Width, distance, p.One)
 			handleErr("printf: ", err)
-			var twoStr = fmt.Sprintf("%d, %d, %d, %s", twoDimensions.Height, twoDimensions.Width, distance, file2.Name())
+			var twoStr = fmt.Sprintf("%d, %d, %d, %s", imgCacheTwo.Config.Height, imgCacheTwo.Config.Width, distance, p.Two)
 			handleErr("printf: ", err)
 
-			if (oneDimensions.Height * oneDimensions.Width) > (twoDimensions.Height * twoDimensions.Width) {
+			if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
 				deleteLogger.WithFields(log.Fields{
-					"cmd":   "rm " + file2.Name(),
+					"cmd":   "rm " + p.Two,
 					"big":   oneStr,
 					"small": twoStr,
 				}).Info("delete")
 			} else {
 				deleteLogger.WithFields(log.Fields{
-					"cmd":   "rm " + file1.Name(),
+					"cmd":   "rm " + p.One,
 					"big":   twoStr,
 					"small": oneStr,
 				}).Info("delete")
 			}
 		}
-		err = file1.Close()
-		handleErr("file close: "+file1.Name(), err)
-		err = file2.Close()
-		handleErr("file close: "+file1.Name(), err)
 
 		checkpoints <- p
 		diffTime.Set(float64(time.Since(start)))
@@ -352,13 +341,17 @@ func getCheckpoints() (int, int) {
 
 	return startI, startJ
 }
-func publishStats() {
+
+func publishStats(hashCache *hashCache) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
 
 		gcOpTotal.Set(float64(stats.NumGC))
 		gcTime.Set(float64(stats.PauseTotalNs))
+
+		imageCacheSize.Set(float64(hashCache.Size()))
+		imageCacheNumImages.Set(float64(hashCache.NumImages()))
 
 		time.Sleep(10 * time.Second)
 	}
