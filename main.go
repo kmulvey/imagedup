@@ -109,7 +109,7 @@ func init() {
 	}
 
 	deleteLogger = logrus.New()
-	deleteLogger.SetFormatter(new(DeleteLogFormatter))
+	deleteLogger.SetFormatter(&log.JSONFormatter{}) // new(DeleteLogFormatter))
 	deleteLogger.SetOutput(file)
 }
 
@@ -141,7 +141,7 @@ func main() {
 	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
 	// spin up the diff workers
-	var threads = 24
+	var threads = 32
 	var checkpoints = make(chan pair)
 	go cacheCheckpoint(checkpoints)
 	var fileChans = make([]chan pair, threads)
