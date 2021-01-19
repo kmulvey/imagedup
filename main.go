@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -82,11 +83,11 @@ type DeleteLogFormatter struct {
 
 func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var buf = new(bytes.Buffer)
-	buf.WriteString(entry.Data["cmd"].(string))
 	buf.WriteString(fmt.Sprintf("\n%s: %s		", "big", entry.Data["big"].(string)))
 	buf.WriteString(fmt.Sprintf("%s: %s\n", "small", entry.Data["small"].(string)))
 
-	return buf.Bytes(), nil
+	var js, _ = json.Marshal(entry.Data)
+	return append(js, '\n'), nil
 }
 
 func init() {
@@ -109,7 +110,7 @@ func init() {
 	}
 
 	deleteLogger = logrus.New()
-	deleteLogger.SetFormatter(&log.JSONFormatter{}) // new(DeleteLogFormatter))
+	deleteLogger.SetFormatter(new(DeleteLogFormatter)) // new(DeleteLogFormatter))
 	deleteLogger.SetOutput(file)
 }
 
@@ -235,22 +236,15 @@ func diff(cache *hashCache, rootDir string, pairs, checkpoints chan pair, done c
 		handleErr("distance", err)
 
 		if distance < 10 {
-			var oneStr = fmt.Sprintf("%d, %d, %d, %s", imgCacheOne.Config.Height, imgCacheOne.Config.Width, distance, p.One)
-			handleErr("printf: ", err)
-			var twoStr = fmt.Sprintf("%d, %d, %d, %s", imgCacheTwo.Config.Height, imgCacheTwo.Config.Width, distance, p.Two)
-			handleErr("printf: ", err)
-
 			if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
 				deleteLogger.WithFields(log.Fields{
-					"cmd":   "rm " + p.Two,
-					"big":   oneStr,
-					"small": twoStr,
+					"big":   p.One,
+					"small": p.Two,
 				}).Info("delete")
 			} else {
 				deleteLogger.WithFields(log.Fields{
-					"cmd":   "rm " + p.One,
-					"big":   twoStr,
-					"small": oneStr,
+					"big":   p.Two,
+					"small": p.One,
 				}).Info("delete")
 			}
 		}
