@@ -3,16 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"path"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -115,10 +112,13 @@ func init() {
 }
 
 func main() {
-	var start = time.Now()
+	// prom
 	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
+		http.Handle("/metrics", promhttp.Handler())
+		log.Fatal(http.ListenAndServe(":5000", nil))
 	}()
+
+	var start = time.Now()
 
 	var rootDir string
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
@@ -126,11 +126,6 @@ func main() {
 	if strings.TrimSpace(rootDir) == "" {
 		log.Fatal("directory not provided")
 	}
-
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		log.Fatal(http.ListenAndServe(":5000", nil))
-	}()
 
 	// get points from where we left off last time
 	var startI, startJ = getCheckpoints()
@@ -195,11 +190,14 @@ func main() {
 	fmt.Println(time.Since(start))
 }
 
+// handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
 func handleErr(prefix string, err error) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
 	}
 }
+
+// listFiles recursivly traverses the root directory and adds every .jpg to a string slice and returns it
 func listFiles(root string) ([]string, error) {
 	var allFiles []string
 	files, err := ioutil.ReadDir(root)
@@ -256,101 +254,6 @@ func diff(cache *hashCache, rootDir string, pairs, checkpoints chan pair, done c
 	close(done)
 }
 
-func merge(cs ...chan struct{}) <-chan struct{} {
-	var wg sync.WaitGroup
-	out := make(chan struct{})
-
-	output := func(c <-chan struct{}) {
-		for n := range c {
-			out <- n
-		}
-		wg.Done()
-	}
-	wg.Add(len(cs))
-	for _, c := range cs {
-		go output(c)
-	}
-
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-	return out
-}
-
-func cacheCheckpoint(checkpoints chan pair) {
-	var dbLogger = logrus.New()
-	dbLogger.SetLevel(log.WarnLevel)
-	var db, err = badger.Open(badger.DefaultOptions("checkpoints").WithLogger(dbLogger))
-	handleErr("badger open", err)
-
-	txn := db.NewTransaction(true) // Read-write txn
-	var i int
-	for cp := range checkpoints {
-		i++
-		err = txn.Set([]byte("checkpoint"), []byte(strconv.Itoa(cp.I)+" "+strconv.Itoa(cp.J)))
-		handleErr("txn.set", err)
-
-		if i%50 == 0 {
-			err = txn.Commit()
-			handleErr("txn commit", err)
-			txn = db.NewTransaction(true)
-		}
-	}
-	err = txn.Commit()
-	handleErr("txn commit", err)
-
-	err = db.Close()
-	handleErr("db close", err)
-}
-
-func getCheckpoints() (int, int) {
-	var dbLogger = logrus.New()
-	dbLogger.SetLevel(log.WarnLevel)
-	var db, err = badger.Open(badger.DefaultOptions("checkpoints").WithLogger(dbLogger))
-	handleErr("badger open", err)
-
-	var valBytes []byte
-	err = db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte("checkpoint"))
-		if errors.Is(err, badger.ErrKeyNotFound) {
-			valBytes = []byte("0 0")
-			return nil
-		}
-		handleErr("tnx get", err)
-
-		valBytes, err = item.ValueCopy(valBytes)
-		handleErr("Value copy", err)
-		return nil
-	})
-	handleErr("db view", err)
-
-	var valSlice = strings.Split(string(valBytes), " ")
-	startI, err := strconv.Atoi(valSlice[0])
-	handleErr("atoi: "+valSlice[0], err)
-	startJ, err := strconv.Atoi(valSlice[1])
-	handleErr("atoi: "+valSlice[1], err)
-	err = db.Close()
-	handleErr("db close", err)
-
-	return startI, startJ
-}
-
-func publishStats(hashCache *hashCache) {
-	for {
-		var stats runtime.MemStats
-		runtime.ReadMemStats(&stats)
-
-		gcOpTotal.Set(float64(stats.NumGC))
-		gcTime.Set(float64(stats.PauseTotalNs))
-
-		imageCacheSize.Set(float64(hashCache.Size()))
-		imageCacheNumImages.Set(float64(hashCache.NumImages()))
-
-		time.Sleep(10 * time.Second)
-	}
-}
-
 func getPair(db *badger.DB, file1, file2 string) bool {
 	var found bool
 	var err = db.View(func(txn *badger.Txn) error {
@@ -377,4 +280,43 @@ func setPair(db *badger.DB, file1, file2 string) {
 
 	err = txn.Commit()
 	handleErr("txn commit", err)
+}
+
+// mergeStructs is a concurrent merge function that combines all input chans
+func merge(cs ...chan struct{}) <-chan struct{} {
+	var wg sync.WaitGroup
+	out := make(chan struct{})
+
+	output := func(c <-chan struct{}) {
+		for n := range c {
+			out <- n
+		}
+		wg.Done()
+	}
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go output(c)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
+}
+
+// publishStats publishes go GC stats + cache size to prom
+func publishStats(hashCache *hashCache) {
+	for {
+		var stats runtime.MemStats
+		runtime.ReadMemStats(&stats)
+
+		gcOpTotal.Set(float64(stats.NumGC))
+		gcTime.Set(float64(stats.PauseTotalNs))
+
+		imageCacheSize.Set(float64(hashCache.Size()))
+		imageCacheNumImages.Set(float64(hashCache.NumImages()))
+
+		time.Sleep(10 * time.Second)
+	}
 }
