@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,10 @@ type pair struct {
 }
 
 func main() {
+	var alwaysDelete bool
+	flag.BoolVar(&alwaysDelete, "always-delete", false, "just take the larger one, always")
+	flag.Parse()
+
 	var file, err = os.Open("delete.log")
 	if err != nil {
 		log.Fatal(err)
@@ -28,6 +33,26 @@ func main() {
 			log.Fatal(err)
 		}
 
+		// we could has already deleted one of them, so just go around
+		if !fileExists(p.Small) {
+			fmt.Println(p.Small, " already deleted")
+			continue
+		}
+		if !fileExists(p.Big) {
+			fmt.Println(p.Big, " already deleted")
+			continue
+		}
+
+		if alwaysDelete {
+			err = os.Remove(p.Small)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("deleted", p.Small)
+			continue
+		}
+
+		// open both images with image viewer "eog -- GNOME Image Viewer 41.1"
 		cmd := exec.Command("eog", p.Big)
 		cmd.Start()
 		if err != nil {
@@ -39,6 +64,7 @@ func main() {
 			log.Fatal(err)
 		}
 
+		// ask the user if we should delete
 		var del string
 		fmt.Print("delete ", p.Small, " ? ")
 		fmt.Scanln(&del)
@@ -50,4 +76,11 @@ func main() {
 			fmt.Println("deleted", p.Small)
 		}
 	}
+}
+
+func fileExists(fileName string) bool {
+	if _, err := os.Stat(fileName); err == nil {
+		return true
+	}
+	return false
 }
