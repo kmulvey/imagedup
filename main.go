@@ -28,47 +28,57 @@ type pair struct {
 	Two string
 }
 
+const PromNamespace = "imagedup"
+
 var (
 	diffTime = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "diff_time_nano",
-			Help: "How long it takes to diff two images, in nanoseconds.",
+			Namespace: PromNamespace,
+			Name:      "diff_time_nano",
+			Help:      "How long it takes to diff two images, in nanoseconds.",
 		},
 	)
 	pairTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "pair_total",
-			Help: "How many pairs we read.",
+			Namespace: PromNamespace,
+			Name:      "pair_total",
+			Help:      "How many pairs we read.",
 		},
 	)
 	gcTime = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "gc_time_nano",
+			Namespace: PromNamespace,
+			Name:      "gc_time_nano",
 		},
 	)
 	gcOpTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "gc_op_total",
+			Namespace: PromNamespace,
+			Name:      "gc_op_total",
 		},
 	)
 	totalComparisons = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "total_comparisons",
+			Namespace: PromNamespace,
+			Name:      "total_comparisons",
 		},
 	)
 	comparisonsCompleted = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "comparisons_completed",
+			Namespace: PromNamespace,
+			Name:      "comparisons_completed",
 		},
 	)
 	imageCacheSize = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "image_cache_size_bytes",
+			Namespace: PromNamespace,
+			Name:      "image_cache_size_bytes",
 		},
 	)
 	imageCacheNumImages = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "image_cache_num_images",
+			Namespace: PromNamespace,
+			Name:      "image_cache_num_images",
 		},
 	)
 )
@@ -107,7 +117,7 @@ func init() {
 	}
 
 	deleteLogger = logrus.New()
-	deleteLogger.SetFormatter(new(DeleteLogFormatter)) // new(DeleteLogFormatter))
+	deleteLogger.SetFormatter(new(DeleteLogFormatter))
 	deleteLogger.SetOutput(file)
 }
 
@@ -137,7 +147,7 @@ func main() {
 	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
 	// spin up the diff workers
-	var threads = 32
+	var threads = 2
 	var checkpoints = make(chan pair)
 	go cacheCheckpoint(checkpoints)
 	var fileChans = make([]chan pair, threads)
