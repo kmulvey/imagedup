@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"image"
 	"image/jpeg"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/kmulvey/goimagehash"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -41,8 +43,27 @@ type hashCache struct {
 	lock  sync.RWMutex
 }
 
-func NewHashCache() *hashCache {
-	return &hashCache{cache: make(map[string]imageCache)}
+func NewHashCache(file string) *hashCache {
+	var f, err = os.Open(file)
+	if err != nil {
+		log.Error(err)
+		return &hashCache{cache: make(map[string]imageCache)}
+	}
+
+	// dump map to file
+	var hc = new(hashCache)
+	err = json.NewDecoder(f).Decode(hc.cache)
+	if err != nil {
+		log.Error(err)
+		return &hashCache{cache: make(map[string]imageCache)}
+	}
+
+	err = f.Close()
+	if err != nil {
+		log.Error(err)
+		return &hashCache{cache: make(map[string]imageCache)}
+	}
+	return hc
 }
 
 func (h *hashCache) Size() int {
@@ -104,4 +125,22 @@ func (h *hashCache) GetHash(file string) (imageCache, error) {
 		h.cache[file] = imgCache
 		return imgCache, fileHandle.Close()
 	}
+}
+
+func (h *hashCache) Persist(file string) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	var f, err = os.Create(file)
+	if err != nil {
+		return err
+	}
+
+	// dump map to file
+	err = json.NewEncoder(f).Encode(h.cache)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }
