@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	_ "net/http/pprof"
+
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -122,6 +124,10 @@ func init() {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	// prom
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -143,6 +149,7 @@ func main() {
 	// list all the files
 	var files, err = listFiles(rootDir)
 	handleErr("listfiles", err)
+
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
 
@@ -262,34 +269,6 @@ func diff(cache *hashCache, rootDir string, pairs, checkpoints chan pair, done c
 		comparisonsCompleted.Inc()
 	}
 	close(done)
-}
-
-func getPair(db *badger.DB, file1, file2 string) bool {
-	var found bool
-	var err = db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get([]byte(file1 + file2))
-		if err == nil {
-			found = true
-		}
-		return nil
-
-	})
-	handleErr("txn.get", err)
-	return found
-}
-
-var empmtyByteSlice = make([]byte, 0)
-
-func setPair(db *badger.DB, file1, file2 string) {
-	txn := db.NewTransaction(true)
-
-	var err = txn.Set([]byte(file1+file2), empmtyByteSlice)
-	handleErr("txn.set", err)
-	err = txn.Set([]byte(file2+file1), empmtyByteSlice)
-	handleErr("txn.set", err)
-
-	err = txn.Commit()
-	handleErr("txn commit", err)
 }
 
 // mergeStructs is a concurrent merge function that combines all input chans
