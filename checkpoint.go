@@ -1,69 +1,58 @@
 package main
 
 import (
-	"errors"
-	"strconv"
-	"strings"
-
-	"github.com/dgraph-io/badger/v3"
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
+	"encoding/json"
+	"os"
 )
 
-func cacheCheckpoint(checkpoints chan pair) {
-	var dbLogger = logrus.New()
-	dbLogger.SetLevel(log.WarnLevel)
-	var db, err = badger.Open(badger.DefaultOptions("checkpoints").WithLogger(dbLogger))
-	handleErr("badger open", err)
-
-	txn := db.NewTransaction(true) // Read-write txn
-	var i int
-	for cp := range checkpoints {
-		i++
-		err = txn.Set([]byte("checkpoint"), []byte(strconv.Itoa(cp.I)+" "+strconv.Itoa(cp.J)))
-		handleErr("txn.set", err)
-
-		if i%50 == 0 {
-			err = txn.Commit()
-			handleErr("txn commit", err)
-			txn = db.NewTransaction(true)
-		}
-	}
-	err = txn.Commit()
-	handleErr("txn commit", err)
-
-	err = db.Close()
-	handleErr("db close", err)
+// pair represents two images, their paths and thier element # in the files list
+type pair struct {
+	I   int
+	J   int
+	One string
+	Two string
 }
 
-func getCheckpoints() (int, int) {
-	var dbLogger = logrus.New()
-	dbLogger.SetLevel(log.WarnLevel)
-	var db, err = badger.Open(badger.DefaultOptions("checkpoints").WithLogger(dbLogger))
-	handleErr("badger open", err)
+// getCheckpoints is used on startup to get the last pair of images compared
+// if its the first time running it will just return 0,0
+func NewCheckpoints(file string) (int, int) {
 
-	var valBytes []byte
-	err = db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte("checkpoint"))
-		if errors.Is(err, badger.ErrKeyNotFound) {
-			valBytes = []byte("0 0")
-			return nil
-		}
-		handleErr("tnx get", err)
+	var f, err = os.Open(file)
+	if err != nil {
+		return 0, 0
+	}
+	defer f.Close() // dont really care about this error
 
-		valBytes, err = item.ValueCopy(valBytes)
-		handleErr("Value copy", err)
-		return nil
-	})
-	handleErr("db view", err)
+	// dump map to file
+	var pair = new(pair)
+	err = json.NewDecoder(f).Decode(pair)
+	if err != nil {
+		return 0, 0
+	}
 
-	var valSlice = strings.Split(string(valBytes), " ")
-	startI, err := strconv.Atoi(valSlice[0])
-	handleErr("atoi: "+valSlice[0], err)
-	startJ, err := strconv.Atoi(valSlice[1])
-	handleErr("atoi: "+valSlice[1], err)
-	err = db.Close()
-	handleErr("db close", err)
+	return pair.I, pair.J
+}
 
-	return startI, startJ
+// Drain reads from the chan and caches the lastest pair, used to save to disk later
+func (p *pair) Drain(completedPairs chan pair) {
+	for newPair := range completedPairs {
+		p = &newPair
+	}
+}
+
+// Save stores the last pair we diff'd so we know where to start next time
+func (p *pair) Save(file string) error {
+
+	var f, err = os.Create(lastCheckpointFile)
+	if err != nil {
+		return err
+	}
+
+	// dump map to file
+	err = json.NewEncoder(f).Encode(p)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }
