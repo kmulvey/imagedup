@@ -14,12 +14,14 @@ import (
 var (
 	imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "image_cache_hits",
+			Namespace: PromNamespace,
+			Name:      "image_cache_hits",
 		},
 	)
 	imageCacheMisses = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "image_cache_misses",
+			Namespace: PromNamespace,
+			Name:      "image_cache_misses",
 		},
 	)
 )

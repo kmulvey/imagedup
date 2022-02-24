@@ -179,6 +179,7 @@ func main() {
 	var started bool
 	for i, one := range files {
 		for j, two := range files {
+			// trying to find where we left off last time
 			if !started {
 				if i == startI && j == startJ {
 					started = true
