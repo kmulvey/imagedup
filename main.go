@@ -8,16 +8,11 @@ import (
 	_ "net/http/pprof"
 	"os/signal"
 
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
-	"runtime"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -26,65 +21,6 @@ import (
 const PromNamespace = "imagedup"
 const hashCacheFile = "hashcache.json"
 const lastCheckpointFile = "checkpoint.json"
-
-var (
-	diffTime = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "diff_time_nano",
-			Help:      "How long it takes to diff two images, in nanoseconds.",
-		},
-	)
-	pairTotal = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: PromNamespace,
-			Name:      "pair_total",
-			Help:      "How many pairs we read.",
-		},
-	)
-	gcTime = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "gc_time_nano",
-		},
-	)
-	gcOpTotal = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "gc_op_total",
-		},
-	)
-	totalComparisons = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "total_comparisons",
-		},
-	)
-	comparisonsCompleted = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "comparisons_completed",
-		},
-	)
-	imageCacheSize = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "image_cache_size_bytes",
-		},
-	)
-	imageCacheNumImages = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "image_cache_num_images",
-		},
-	)
-	pairCacheSize = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "pair_cache_size",
-		},
-	)
-)
 
 var deleteLogger *logrus.Logger
 
@@ -109,15 +45,6 @@ type pair struct {
 }
 
 func init() {
-	prometheus.MustRegister(diffTime)
-	prometheus.MustRegister(pairTotal)
-	prometheus.MustRegister(gcOpTotal)
-	prometheus.MustRegister(gcTime)
-	prometheus.MustRegister(totalComparisons)
-	prometheus.MustRegister(comparisonsCompleted)
-	prometheus.MustRegister(imageCacheSize)
-	prometheus.MustRegister(imageCacheNumImages)
-	prometheus.MustRegister(pairCacheSize)
 
 	log.SetFormatter(&log.TextFormatter{})
 	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -209,58 +136,6 @@ func setup(rootDir string) ([]string, *hashCache) {
 	return files, imageHashCache
 }
 
-// handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
-func handleErr(prefix string, err error) {
-	if err != nil {
-		fmt.Println(prefix, err)
-		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
-	}
-}
-
-// listFiles recursivly traverses the root directory and adds every .jpg to a string slice and returns it
-func listFiles(root string) ([]string, error) {
-	var allFiles []string
-	files, err := ioutil.ReadDir(root)
-	if err != nil {
-		return allFiles, err
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			var subFiles, err = listFiles(path.Join(root, file.Name()))
-			if err != nil {
-				return allFiles, err
-			}
-			allFiles = append(allFiles, subFiles...)
-		} else {
-			if strings.HasSuffix(file.Name(), ".jpg") {
-				allFiles = append(allFiles, path.Join(root, file.Name()))
-			}
-		}
-	}
-	return allFiles, nil
-}
-
-func streamFiles(files []string, pairChan chan pair, killChan chan struct{}) {
-	for i, one := range files {
-		for j, two := range files {
-			if i != j {
-				// this protects us from getting nil exception when shutting down
-				select {
-				case _, open := <-killChan:
-					if !open {
-						close(pairChan)
-						return
-					}
-				default:
-					pairChan <- pair{One: one, Two: two, I: i, J: j}
-					pairTotal.Inc()
-				}
-			}
-		}
-	}
-	close(pairChan)
-}
-
 func diff(cache *hashCache, p pair) {
 	var start = time.Now()
 
@@ -289,42 +164,4 @@ func diff(cache *hashCache, p pair) {
 
 	diffTime.Set(float64(time.Since(start)))
 	comparisonsCompleted.Inc()
-}
-
-// mergeStructs is a concurrent merge function that combines all input chans
-func merge(cs ...chan struct{}) <-chan struct{} {
-	var wg sync.WaitGroup
-	out := make(chan struct{})
-
-	output := func(c <-chan struct{}) {
-		for n := range c {
-			out <- n
-		}
-		wg.Done()
-	}
-	wg.Add(len(cs))
-	for _, c := range cs {
-		go output(c)
-	}
-
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-	return out
-}
-
-// publishStats publishes go GC stats + cache size to prom
-func publishStats(imageCache *hashCache) {
-	for {
-		var stats runtime.MemStats
-		runtime.ReadMemStats(&stats)
-
-		gcOpTotal.Set(float64(stats.NumGC))
-		gcTime.Set(float64(stats.PauseTotalNs))
-
-		imageCacheNumImages.Set(float64(imageCache.NumImages()))
-
-		time.Sleep(10 * time.Second)
-	}
 }
