@@ -104,19 +104,15 @@ Loop:
 			}
 			break Loop
 		default:
-			/*
-				select {
-				case p, open := <-pairChan:
-					if !open {
-						break Loop
-					}
-					diff(imageHashCache, p)
+			select {
+			case p, open := <-pairChan:
+				if !open {
+					close(killChan)
+					break Loop
 				}
-			*/
-			for p := range pairChan {
 				diff(imageHashCache, p)
+			default:
 			}
-			close(killChan)
 		}
 	}
 

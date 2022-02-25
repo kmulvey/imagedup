@@ -34,7 +34,6 @@ jobs:
       - name: Build & Test
         run: |
           go mod tidy
-          go test -v ./...
           go build -v -ldflags="-s -w" ./...
 
       - name: Run GoReleaser
