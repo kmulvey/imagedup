@@ -171,7 +171,10 @@ Loop:
 			break Loop
 		default:
 			select {
-			case p := <-pairChan:
+			case p, open := <-pairChan:
+				if !open {
+					break Loop
+				}
 				diff(imageHashCache, p)
 				pairCache.Drain(p)
 			}
@@ -236,6 +239,8 @@ func listFiles(root string) ([]string, error) {
 	return allFiles, nil
 }
 
+// n = total # of files
+// total comparisons = n^2 - n
 func streamFiles(pc *pairCache, files []string, pairChan chan pair, killChan chan struct{}) {
 	var started bool
 	for i, one := range files {
@@ -258,15 +263,16 @@ func streamFiles(pc *pairCache, files []string, pairChan chan pair, killChan cha
 						return
 					}
 				default:
-					if !pc.Get(one, two) {
-						pairChan <- pair{One: one, Two: two, I: i, J: j}
-						pairTotal.Inc()
-						pc.Set(one, two)
-					}
+					//if !pc.Get(one, two) {
+					pairChan <- pair{One: one, Two: two, I: i, J: j}
+					pairTotal.Inc()
+					//	pc.Set(one, two)
+					//}
 				}
 			}
 		}
 	}
+	close(pairChan)
 }
 
 func diff(cache *hashCache, p pair) {
