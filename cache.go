@@ -38,7 +38,7 @@ type imageCache struct {
 }
 
 type hashCache struct {
-	Cache map[string]imageCache
+	Cache map[string]*imageCache
 	lock  sync.RWMutex
 }
 
@@ -49,7 +49,7 @@ type HashExportType struct {
 
 func NewHashCache(file string) (*hashCache, error) {
 	var hc = new(hashCache)
-	hc.Cache = make(map[string]imageCache)
+	hc.Cache = make(map[string]*imageCache)
 
 	// try to open the file, if it doesnt exist, create it
 	var f, err = os.Open(file)
@@ -70,7 +70,7 @@ func NewHashCache(file string) (*hashCache, error) {
 	}
 
 	for name, hash := range m {
-		hc.Cache[name] = imageCache{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
+		hc.Cache[name] = &imageCache{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
 	}
 
 	err = f.Close()
@@ -103,19 +103,18 @@ func (h *hashCache) NumImages() int {
 	return len(h.Cache)
 }
 
-func (h *hashCache) GetHash(file string) (imageCache, error) {
+func (h *hashCache) GetHash(file string) (*imageCache, error) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	var imgCache = imageCache{}
-	var ok bool
-
-	imgCache, ok = h.Cache[file]
+	var imgCache, ok = h.Cache[file]
 	if ok {
 		imageCacheHits.Inc()
 		return imgCache, nil
 	} else {
 		imageCacheMisses.Inc()
+		var imgCache = new(imageCache)
+
 		var fileHandle, err = os.Open(file)
 		if err != nil {
 			return imgCache, err
