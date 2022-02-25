@@ -47,6 +47,8 @@ type pair struct {
 	Two string
 }
 
+// Get tires to see if the pair is in the map, it tries both
+//
 func (pc *pairCache) Get(fileOne, fileTwo string) bool {
 	pc.Lock.RLock()
 	defer pc.Lock.RUnlock()
@@ -60,6 +62,8 @@ func (pc *pairCache) Get(fileOne, fileTwo string) bool {
 		} else {
 			pairCacheHits.Inc()
 		}
+	} else {
+		pairCacheHits.Inc()
 	}
 
 	return found
@@ -70,7 +74,7 @@ func (pc *pairCache) Set(fileOne, fileTwo string) {
 	defer pc.Lock.Unlock()
 
 	pc.Cache[fileOne+fileTwo] = emptyStruct
-	pc.Cache[fileTwo+fileOne] = emptyStruct
+	//	pc.Cache[fileTwo+fileOne] = emptyStruct
 }
 
 // getCheckpoints is used on startup to get the last pair of images compared

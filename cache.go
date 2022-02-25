@@ -33,7 +33,7 @@ func init() {
 }
 
 type imageCache struct {
-	goimagehash.ImageHash
+	*goimagehash.ImageHash
 	image.Config `json:"-"`
 }
 
@@ -42,15 +42,20 @@ type hashCache struct {
 	lock  sync.RWMutex
 }
 
+type HashExportType struct {
+	Hash uint64
+	Kind goimagehash.Kind
+}
+
 func NewHashCache(file string) (*hashCache, error) {
 	var hc = new(hashCache)
+	hc.Cache = make(map[string]imageCache)
 
 	// try to open the file, if it doesnt exist, create it
 	var f, err = os.Open(file)
 	if err != nil {
 		if os.IsNotExist(err) {
 			f, err = os.Create(file)
-			hc.Cache = make(map[string]imageCache)
 			return hc, err
 		} else {
 			return nil, err
@@ -58,9 +63,14 @@ func NewHashCache(file string) (*hashCache, error) {
 	}
 
 	// load map to file
-	err = json.NewDecoder(f).Decode(&hc.Cache)
+	var m = make(map[string]HashExportType)
+	err = json.NewDecoder(f).Decode(&m)
 	if err != nil {
 		return nil, err
+	}
+
+	for name, hash := range m {
+		hc.Cache[name] = imageCache{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
 	}
 
 	err = f.Close()
@@ -116,8 +126,6 @@ func (h *hashCache) GetHash(file string) (imageCache, error) {
 			return imgCache, err
 		}
 
-		// todo: use goimagehash.Dump()
-		// https://pkg.go.dev/github.com/corona10/goimagehash?utm_source=godoc#ImageHash.ToString
 		imgCache.ImageHash, err = goimagehash.PerceptionHash(img)
 		if err != nil {
 			return imgCache, err
@@ -134,6 +142,7 @@ func (h *hashCache) GetHash(file string) (imageCache, error) {
 	}
 }
 
+// https://pkg.go.dev/github.com/corona10/goimagehash#ImageHash.Dump
 func (h *hashCache) Persist(file string) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -144,7 +153,12 @@ func (h *hashCache) Persist(file string) error {
 	}
 
 	// dump map to file
-	err = json.NewEncoder(f).Encode(h.Cache)
+	var m = make(map[string]HashExportType)
+	for name, hash := range h.Cache {
+		m[name] = HashExportType{Hash: hash.GetHash(), Kind: hash.GetKind()}
+	}
+
+	err = json.NewEncoder(f).Encode(m)
 	if err != nil {
 		return err
 	}
