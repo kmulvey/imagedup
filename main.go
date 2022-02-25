@@ -78,6 +78,12 @@ var (
 			Name:      "image_cache_num_images",
 		},
 	)
+	pairCacheSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: PromNamespace,
+			Name:      "pair_cache_size",
+		},
+	)
 )
 
 var deleteLogger *logrus.Logger
@@ -103,6 +109,7 @@ func init() {
 	prometheus.MustRegister(comparisonsCompleted)
 	prometheus.MustRegister(imageCacheSize)
 	prometheus.MustRegister(imageCacheNumImages)
+	prometheus.MustRegister(pairCacheSize)
 
 	log.SetFormatter(&log.TextFormatter{})
 	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -178,6 +185,7 @@ func setup(rootDir string) (*pairCache, []string, *hashCache) {
 	// get points from where we left off last time
 	var pairCache, err = NewPairFromCache(lastCheckpointFile)
 	handleErr("NewPairFromCache", err)
+	log.Infof("Loaded %d pairs from disk cache", len(pairCache.Cache))
 
 	// list all the files
 	files, err := listFiles(rootDir)
@@ -186,8 +194,9 @@ func setup(rootDir string) (*pairCache, []string, *hashCache) {
 	// init the image cache
 	imageHashCache, err := NewHashCache(hashCacheFile)
 	handleErr("NewHashCache", err)
+	log.Infof("Loaded %d image hashes from disk cache", len(imageHashCache.Cache))
 
-	go publishStats(imageHashCache)
+	go publishStats(imageHashCache, pairCache)
 
 	// starter stats
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
@@ -315,7 +324,7 @@ func merge(cs ...chan struct{}) <-chan struct{} {
 }
 
 // publishStats publishes go GC stats + cache size to prom
-func publishStats(hashCache *hashCache) {
+func publishStats(imageCache *hashCache, pc *pairCache) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
@@ -323,8 +332,9 @@ func publishStats(hashCache *hashCache) {
 		gcOpTotal.Set(float64(stats.NumGC))
 		gcTime.Set(float64(stats.PauseTotalNs))
 
-		imageCacheSize.Set(float64(hashCache.Size()))
-		imageCacheNumImages.Set(float64(hashCache.NumImages()))
+		imageCacheSize.Set(float64(imageCache.Size()))
+		imageCacheNumImages.Set(float64(imageCache.NumImages()))
+		pairCacheSize.Set(float64(pc.Size()))
 
 		time.Sleep(10 * time.Second)
 	}

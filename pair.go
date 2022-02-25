@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
@@ -74,7 +75,6 @@ func (pc *pairCache) Set(fileOne, fileTwo string) {
 	defer pc.Lock.Unlock()
 
 	pc.Cache[fileOne+fileTwo] = emptyStruct
-	//	pc.Cache[fileTwo+fileOne] = emptyStruct
 }
 
 // getCheckpoints is used on startup to get the last pair of images compared
@@ -97,7 +97,7 @@ func NewPairFromCache(file string) (*pairCache, error) {
 	// dump map to file
 	err = json.NewDecoder(f).Decode(p)
 	if err != nil {
-		return p, err
+		return p, fmt.Errorf("problem loading pairChach from json file, err: %w", err)
 	}
 
 	err = f.Close()
@@ -112,14 +112,6 @@ func NewPairFromCache(file string) (*pairCache, error) {
 func (pc *pairCache) Drain(completedPair pair) {
 	pc.LastPair = completedPair
 }
-
-/*
-func (p *pair) Drain(completedPairs chan pair) {
-	for newPair := range completedPairs {
-		p = &newPair
-	}
-}
-*/
 
 // Save stores the last pair we diff'd so we know where to start next time
 func (pc *pairCache) Save(file string) error {
@@ -136,4 +128,11 @@ func (pc *pairCache) Save(file string) error {
 	}
 
 	return f.Close()
+}
+
+func (pc *pairCache) Size() int {
+	pc.Lock.RLock()
+	defer pc.Lock.RUnlock()
+
+	return len(pc.Cache)
 }
