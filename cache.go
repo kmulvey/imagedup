@@ -54,7 +54,7 @@ func NewHashCache(file string) (*hashCache, error) {
 	var f, err = os.Open(file)
 	if err != nil {
 		if os.IsNotExist(err) {
-			f, err = os.Create(file)
+			_, err = os.Create(file)
 			return hc, err
 		} else {
 			return nil, err
@@ -114,7 +114,11 @@ func (h *hashCache) GetHash(file string) (*imageCache, error) {
 			return imgCache, err
 		}
 
-		fileHandle.Seek(0, 0) // reset file reader
+		_, err = fileHandle.Seek(0, 0) // reset file reader
+		if err != nil {
+			return imgCache, err
+		}
+
 		imgCache.Config, err = jpeg.DecodeConfig(fileHandle)
 		if err != nil {
 			return imgCache, err

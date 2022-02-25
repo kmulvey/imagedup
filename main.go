@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "net/http/pprof"
 	"os/signal"
+	"syscall"
 
 	"net/http"
 	"os"
@@ -20,7 +21,6 @@ import (
 
 const PromNamespace = "imagedup"
 const hashCacheFile = "hashcache.json"
-const lastCheckpointFile = "checkpoint.json"
 
 var deleteLogger *logrus.Logger
 
@@ -51,8 +51,7 @@ func init() {
 	if err == nil {
 		log.SetOutput(file)
 	} else {
-		log.Info("Failed to log to file, using default stderr")
-		os.Exit(1)
+		log.Fatal("Failed to log to file, using default stderr")
 	}
 
 	deleteLogger = logrus.New()
@@ -65,7 +64,7 @@ func main() {
 	var start = time.Now()
 
 	var gracefulShutdown = make(chan os.Signal, 1)
-	signal.Notify(gracefulShutdown, os.Interrupt, os.Kill)
+	signal.Notify(gracefulShutdown, os.Interrupt, syscall.SIGTERM)
 
 	// prom
 	go func() {
@@ -99,21 +98,33 @@ Loop:
 		case <-gracefulShutdown:
 			fmt.Println("shutting down")
 			close(killChan)
-			shutdown(imageHashCache)
+			var err = shutdown(imageHashCache)
+			if err != nil {
+				log.Fatal("error shutting down", err)
+			}
 			break Loop
 		default:
-			select {
-			case p, open := <-pairChan:
-				if !open {
-					break Loop
+			/*
+				select {
+				case p, open := <-pairChan:
+					if !open {
+						break Loop
+					}
+					diff(imageHashCache, p)
 				}
+			*/
+			for p := range pairChan {
 				diff(imageHashCache, p)
 			}
 		}
 	}
 
 	close(killChan)
-	shutdown(imageHashCache)
+	var err = shutdown(imageHashCache)
+	if err != nil {
+		log.Fatal("error shutting down", err)
+	}
+
 	fmt.Println("Total time taken:", time.Since(start))
 }
 

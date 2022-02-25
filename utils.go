@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -15,6 +14,7 @@ func handleErr(prefix string, err error) {
 	}
 }
 
+/*
 // mergeStructs is a concurrent merge function that combines all input chans
 func merge(cs ...chan struct{}) <-chan struct{} {
 	var wg sync.WaitGroup
@@ -37,3 +37,4 @@ func merge(cs ...chan struct{}) <-chan struct{} {
 	}()
 	return out
 }
+*/
