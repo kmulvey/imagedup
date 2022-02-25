@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"sync"
 
@@ -84,11 +83,12 @@ func NewPairFromCache(file string) (*pairCache, error) {
 	var p = new(pairCache)
 
 	var f, err = os.Open(file)
+	defer f.Close()
 	if err != nil {
 		if os.IsNotExist(err) {
 			f, err = os.Create(file)
 			p.Cache = make(map[string]struct{})
-			return p, err
+			return p, nil
 		} else {
 			return nil, err
 		}
@@ -97,12 +97,9 @@ func NewPairFromCache(file string) (*pairCache, error) {
 	// dump map to file
 	err = json.NewDecoder(f).Decode(p)
 	if err != nil {
-		return p, fmt.Errorf("problem loading pairChach from json file, err: %w", err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		return nil, err
+		// if the file is bad what else can you do?
+		p.Cache = make(map[string]struct{})
+		return p, nil
 	}
 
 	return p, nil

@@ -8,5 +8,6 @@ func shutdown(pc *pairCache, cache *hashCache) error {
 		return err
 	}
 
-	return pc.Save(lastCheckpointFile)
+	//return pc.Save(lastCheckpointFile)
+	return cache.Persist(hashCacheFile)
 }
