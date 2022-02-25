@@ -6,7 +6,6 @@ import (
 	"image/jpeg"
 	"os"
 	"sync"
-	"unsafe"
 
 	"github.com/kmulvey/goimagehash"
 	"github.com/prometheus/client_golang/prometheus"
@@ -79,21 +78,6 @@ func NewHashCache(file string) (*hashCache, error) {
 	}
 
 	return hc, nil
-}
-
-func (h *hashCache) Size() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-
-	var total int
-	for _, img := range h.Cache {
-		total += int(unsafe.Sizeof(img.ImageHash))
-		total += int(unsafe.Sizeof(img.Config.ColorModel))
-		total += int(unsafe.Sizeof(img.Config.Height))
-		total += int(unsafe.Sizeof(img.Config.Width))
-	}
-
-	return total
 }
 
 func (h *hashCache) NumImages() int {

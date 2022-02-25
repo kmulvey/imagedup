@@ -100,6 +100,14 @@ func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return append(js, '\n'), nil
 }
 
+// pair represents two images, their paths and thier element # in the files list
+type pair struct {
+	I   int
+	J   int
+	One string
+	Two string
+}
+
 func init() {
 	prometheus.MustRegister(diffTime)
 	prometheus.MustRegister(pairTotal)
@@ -145,7 +153,7 @@ func main() {
 		log.Fatal("directory not provided")
 	}
 
-	var pairCache, files, imageHashCache = setup(rootDir)
+	var files, imageHashCache = setup(rootDir)
 
 	// db to store pairs that are alreay done
 	var dbLogger = logrus.New()
@@ -153,7 +161,7 @@ func main() {
 
 	var pairChan = make(chan pair)
 	var killChan = make(chan struct{})
-	go streamFiles(pairCache, files, pairChan, killChan)
+	go streamFiles(files, pairChan, killChan)
 
 	fmt.Println("started, go to grafana to monitor")
 
@@ -164,7 +172,7 @@ Loop:
 		case <-gracefulShutdown:
 			fmt.Println("shutting down")
 			close(killChan)
-			shutdown(pairCache, imageHashCache)
+			shutdown(imageHashCache)
 			break Loop
 		default:
 			select {
@@ -173,22 +181,16 @@ Loop:
 					break Loop
 				}
 				diff(imageHashCache, p)
-				pairCache.Drain(p)
 			}
 		}
 	}
 
 	close(killChan)
-	shutdown(pairCache, imageHashCache)
+	shutdown(imageHashCache)
 	fmt.Println("Total time taken:", time.Since(start))
 }
 
-func setup(rootDir string) (*pairCache, []string, *hashCache) {
-
-	// get points from where we left off last time
-	var pairCache, err = NewPairFromCache(lastCheckpointFile)
-	handleErr("NewPairFromCache", err)
-	log.Infof("Loaded %d pairs from disk cache", len(pairCache.Cache))
+func setup(rootDir string) ([]string, *hashCache) {
 
 	// list all the files
 	files, err := listFiles(rootDir)
@@ -199,13 +201,12 @@ func setup(rootDir string) (*pairCache, []string, *hashCache) {
 	handleErr("NewHashCache", err)
 	log.Infof("Loaded %d image hashes from disk cache", len(imageHashCache.Cache))
 
-	go publishStats(imageHashCache, pairCache)
+	go publishStats(imageHashCache)
 
 	// starter stats
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
-	comparisonsCompleted.Set(float64(pairCache.LastPair.I*len(files) + pairCache.LastPair.J))
 
-	return pairCache, files, imageHashCache
+	return files, imageHashCache
 }
 
 // handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
@@ -239,19 +240,9 @@ func listFiles(root string) ([]string, error) {
 	return allFiles, nil
 }
 
-func streamFiles(pc *pairCache, files []string, pairChan chan pair, killChan chan struct{}) {
-	var started bool
+func streamFiles(files []string, pairChan chan pair, killChan chan struct{}) {
 	for i, one := range files {
 		for j, two := range files {
-			// trying to find where we left off last time
-			if !started {
-				if i == pc.LastPair.I && j == pc.LastPair.J {
-					started = true
-				} else {
-					continue
-				}
-			}
-
 			if i != j {
 				// this protects us from getting nil exception when shutting down
 				select {
@@ -296,7 +287,6 @@ func diff(cache *hashCache, p pair) {
 		}
 	}
 
-	//		checkpoints <- p
 	diffTime.Set(float64(time.Since(start)))
 	comparisonsCompleted.Inc()
 }
@@ -325,7 +315,7 @@ func merge(cs ...chan struct{}) <-chan struct{} {
 }
 
 // publishStats publishes go GC stats + cache size to prom
-func publishStats(imageCache *hashCache, pc *pairCache) {
+func publishStats(imageCache *hashCache) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
@@ -333,9 +323,7 @@ func publishStats(imageCache *hashCache, pc *pairCache) {
 		gcOpTotal.Set(float64(stats.NumGC))
 		gcTime.Set(float64(stats.PauseTotalNs))
 
-		imageCacheSize.Set(float64(imageCache.Size()))
 		imageCacheNumImages.Set(float64(imageCache.NumImages()))
-		pairCacheSize.Set(float64(pc.Size()))
 
 		time.Sleep(10 * time.Second)
 	}
