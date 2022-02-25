@@ -128,9 +128,6 @@ func init() {
 func main() {
 
 	var start = time.Now()
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 
 	var gracefulShutdown = make(chan os.Signal, 1)
 	signal.Notify(gracefulShutdown, os.Interrupt, os.Kill)
@@ -180,6 +177,9 @@ Loop:
 			}
 		}
 	}
+
+	close(killChan)
+	shutdown(pairCache, imageHashCache)
 	fmt.Println("Total time taken:", time.Since(start))
 }
 
@@ -239,8 +239,6 @@ func listFiles(root string) ([]string, error) {
 	return allFiles, nil
 }
 
-// n = total # of files
-// total comparisons = n^2 - n
 func streamFiles(pc *pairCache, files []string, pairChan chan pair, killChan chan struct{}) {
 	var started bool
 	for i, one := range files {
@@ -263,11 +261,8 @@ func streamFiles(pc *pairCache, files []string, pairChan chan pair, killChan cha
 						return
 					}
 				default:
-					//if !pc.Get(one, two) {
 					pairChan <- pair{One: one, Two: two, I: i, J: j}
 					pairTotal.Inc()
-					//	pc.Set(one, two)
-					//}
 				}
 			}
 		}
