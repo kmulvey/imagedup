@@ -30,6 +30,12 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: latest
+      
+      - name: Build & Test
+        run: |
+          go mod tidy
+          go test -v ./...
+          go build -v -ldflags="-s -w" ./...
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@master

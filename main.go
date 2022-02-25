@@ -116,10 +116,10 @@ Loop:
 			for p := range pairChan {
 				diff(imageHashCache, p)
 			}
+			close(killChan)
 		}
 	}
 
-	close(killChan)
 	var err = shutdown(imageHashCache)
 	if err != nil {
 		log.Fatal("error shutting down", err)
