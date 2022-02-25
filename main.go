@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	_ "net/http/pprof"
+	"os/signal"
 
 	"io/ioutil"
 	"net/http"
@@ -16,21 +17,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
-type pair struct {
-	I   int
-	J   int
-	One string
-	Two string
-}
-
 const PromNamespace = "imagedup"
+const hashCacheFile = "hashcache.json"
+const lastCheckpointFile = "checkpoint.json"
 
 var (
 	diffTime = prometheus.NewGauge(
@@ -124,17 +119,20 @@ func init() {
 }
 
 func main() {
+
+	var start = time.Now()
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
+
+	var gracefulShutdown = make(chan os.Signal, 1)
+	signal.Notify(gracefulShutdown, os.Interrupt, os.Kill)
 
 	// prom
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Fatal(http.ListenAndServe(":5000", nil))
 	}()
-
-	var start = time.Now()
 
 	var rootDir string
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
@@ -143,74 +141,65 @@ func main() {
 		log.Fatal("directory not provided")
 	}
 
-	// get points from where we left off last time
-	var startI, startJ = getCheckpoints()
-
-	// list all the files
-	var files, err = listFiles(rootDir)
-	handleErr("listfiles", err)
-
-	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
-	comparisonsCompleted.Set(float64(startI*len(files) + startJ))
-
-	// spin up the diff workers
-	var threads = 2
-	var checkpoints = make(chan pair)
-	go cacheCheckpoint(checkpoints)
-	var fileChans = make([]chan pair, threads)
-	var doneChans = make([]chan struct{}, threads)
-	var hashCache = NewHashCache()
-	go publishStats(hashCache)
-	for i := 0; i < threads; i++ {
-		fileChans[i] = make(chan pair, 10)
-		doneChans[i] = make(chan struct{})
-		go diff(hashCache, rootDir, fileChans[i], checkpoints, doneChans[i])
-	}
+	var pairCache, files, imageHashCache = setup(rootDir)
 
 	// db to store pairs that are alreay done
 	var dbLogger = logrus.New()
 	dbLogger.SetLevel(log.WarnLevel)
-	pairDB, err := badger.Open(badger.DefaultOptions("pairs").WithLogger(dbLogger))
-	handleErr("pairs db open", err)
+
+	var pairChan = make(chan pair)
+	var killChan = make(chan struct{})
+	go streamFiles(pairCache, files, pairChan, killChan)
 
 	fmt.Println("started, go to grafana to monitor")
 
 	// feed the files into the diff workers
-	var started bool
-	for i, one := range files {
-		for j, two := range files {
-			// trying to find where we left off last time
-			if !started {
-				if i == startI && j == startJ {
-					started = true
-				} else {
-					continue
-				}
-			}
-
-			if i != j {
-				if !getPair(pairDB, one, two) {
-					fileChans[j%threads] <- pair{One: one, Two: two, I: i, J: j}
-					pairTotal.Inc()
-					setPair(pairDB, one, two)
-				}
+Loop:
+	for {
+		select {
+		case <-gracefulShutdown:
+			fmt.Println("shutting down")
+			close(killChan)
+			shutdown(pairCache, imageHashCache)
+			break Loop
+		default:
+			select {
+			case p := <-pairChan:
+				diff(imageHashCache, p)
+				pairCache.Drain(p)
 			}
 		}
 	}
+	fmt.Println("Total time taken:", time.Since(start))
+}
 
-	for _, c := range fileChans {
-		close(c)
-	}
-	err = pairDB.Close()
-	handleErr("close db", err)
+func setup(rootDir string) (*pairCache, []string, *hashCache) {
 
-	<-merge(doneChans...)
-	fmt.Println(time.Since(start))
+	// get points from where we left off last time
+	var pairCache, err = NewPairFromCache(lastCheckpointFile)
+	handleErr("NewPairFromCache", err)
+
+	// list all the files
+	files, err := listFiles(rootDir)
+	handleErr("listFiles", err)
+
+	// init the image cache
+	imageHashCache, err := NewHashCache(hashCacheFile)
+	handleErr("NewHashCache", err)
+
+	go publishStats(imageHashCache)
+
+	// starter stats
+	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
+	comparisonsCompleted.Set(float64(pairCache.LastPair.I*len(files) + pairCache.LastPair.J))
+
+	return pairCache, files, imageHashCache
 }
 
 // handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
 func handleErr(prefix string, err error) {
 	if err != nil {
+		fmt.Println(prefix, err)
 		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
 	}
 }
@@ -238,38 +227,68 @@ func listFiles(root string) ([]string, error) {
 	return allFiles, nil
 }
 
-func diff(cache *hashCache, rootDir string, pairs, checkpoints chan pair, done chan struct{}) {
-	for p := range pairs {
-		var start = time.Now()
+func streamFiles(pc *pairCache, files []string, pairChan chan pair, killChan chan struct{}) {
+	var started bool
+	for i, one := range files {
+		for j, two := range files {
+			// trying to find where we left off last time
+			if !started {
+				if i == pc.LastPair.I && j == pc.LastPair.J {
+					started = true
+				} else {
+					continue
+				}
+			}
 
-		var imgCacheOne, err = cache.GetHash(p.One)
-		handleErr("get hash: "+p.One, err)
-
-		imgCacheTwo, err := cache.GetHash(p.Two)
-		handleErr("get hash: "+p.One, err)
-
-		distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
-		handleErr("distance", err)
-
-		if distance < 10 {
-			if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
-				deleteLogger.WithFields(log.Fields{
-					"big":   p.One,
-					"small": p.Two,
-				}).Info("delete")
-			} else {
-				deleteLogger.WithFields(log.Fields{
-					"big":   p.Two,
-					"small": p.One,
-				}).Info("delete")
+			if i != j {
+				// this protects us from getting nil exception when shutting down
+				select {
+				case _, open := <-killChan:
+					if !open {
+						close(pairChan)
+						return
+					}
+				default:
+					if !pc.Get(one, two) {
+						pairChan <- pair{One: one, Two: two, I: i, J: j}
+						pairTotal.Inc()
+						pc.Set(one, two)
+					}
+				}
 			}
 		}
-
-		checkpoints <- p
-		diffTime.Set(float64(time.Since(start)))
-		comparisonsCompleted.Inc()
 	}
-	close(done)
+}
+
+func diff(cache *hashCache, p pair) {
+	var start = time.Now()
+
+	var imgCacheOne, err = cache.GetHash(p.One)
+	handleErr("get hash: "+p.One, err)
+
+	imgCacheTwo, err := cache.GetHash(p.Two)
+	handleErr("get hash: "+p.One, err)
+
+	distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
+	handleErr("distance", err)
+
+	if distance < 10 {
+		if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
+			deleteLogger.WithFields(log.Fields{
+				"big":   p.One,
+				"small": p.Two,
+			}).Info("delete")
+		} else {
+			deleteLogger.WithFields(log.Fields{
+				"big":   p.Two,
+				"small": p.One,
+			}).Info("delete")
+		}
+	}
+
+	//		checkpoints <- p
+	diffTime.Set(float64(time.Since(start)))
+	comparisonsCompleted.Inc()
 }
 
 // mergeStructs is a concurrent merge function that combines all input chans

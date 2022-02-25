@@ -10,20 +10,19 @@ import (
 
 	"github.com/kmulvey/goimagehash"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
 	imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: PromNamespace,
-			Name:      "image_cache_hits",
+			Name:      "image_hash_cache_hits",
 		},
 	)
 	imageCacheMisses = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: PromNamespace,
-			Name:      "image_cache_misses",
+			Name:      "image_hash_cache_misses",
 		},
 	)
 )
@@ -34,36 +33,42 @@ func init() {
 }
 
 type imageCache struct {
-	*goimagehash.ImageHash
-	image.Config
+	goimagehash.ImageHash
+	image.Config `json:"-"`
 }
 
 type hashCache struct {
-	cache map[string]imageCache
+	Cache map[string]imageCache
 	lock  sync.RWMutex
 }
 
-func NewHashCache(file string) *hashCache {
+func NewHashCache(file string) (*hashCache, error) {
+	var hc = new(hashCache)
+
+	// try to open the file, if it doesnt exist, create it
 	var f, err = os.Open(file)
 	if err != nil {
-		log.Error(err)
-		return &hashCache{cache: make(map[string]imageCache)}
+		if os.IsNotExist(err) {
+			f, err = os.Create(file)
+			hc.Cache = make(map[string]imageCache)
+			return hc, err
+		} else {
+			return nil, err
+		}
 	}
 
-	// dump map to file
-	var hc = new(hashCache)
-	err = json.NewDecoder(f).Decode(hc.cache)
+	// load map to file
+	err = json.NewDecoder(f).Decode(&hc.Cache)
 	if err != nil {
-		log.Error(err)
-		return &hashCache{cache: make(map[string]imageCache)}
+		return nil, err
 	}
 
 	err = f.Close()
 	if err != nil {
-		log.Error(err)
-		return &hashCache{cache: make(map[string]imageCache)}
+		return nil, err
 	}
-	return hc
+
+	return hc, nil
 }
 
 func (h *hashCache) Size() int {
@@ -71,7 +76,7 @@ func (h *hashCache) Size() int {
 	defer h.lock.Unlock()
 
 	var total int
-	for _, img := range h.cache {
+	for _, img := range h.Cache {
 		total += int(unsafe.Sizeof(img.ImageHash))
 		total += int(unsafe.Sizeof(img.Config.ColorModel))
 		total += int(unsafe.Sizeof(img.Config.Height))
@@ -85,7 +90,7 @@ func (h *hashCache) NumImages() int {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	return len(h.cache)
+	return len(h.Cache)
 }
 
 func (h *hashCache) GetHash(file string) (imageCache, error) {
@@ -95,7 +100,7 @@ func (h *hashCache) GetHash(file string) (imageCache, error) {
 	var imgCache = imageCache{}
 	var ok bool
 
-	imgCache, ok = h.cache[file]
+	imgCache, ok = h.Cache[file]
 	if ok {
 		imageCacheHits.Inc()
 		return imgCache, nil
@@ -111,6 +116,8 @@ func (h *hashCache) GetHash(file string) (imageCache, error) {
 			return imgCache, err
 		}
 
+		// todo: use goimagehash.Dump()
+		// https://pkg.go.dev/github.com/corona10/goimagehash?utm_source=godoc#ImageHash.ToString
 		imgCache.ImageHash, err = goimagehash.PerceptionHash(img)
 		if err != nil {
 			return imgCache, err
@@ -122,7 +129,7 @@ func (h *hashCache) GetHash(file string) (imageCache, error) {
 			return imgCache, err
 		}
 
-		h.cache[file] = imgCache
+		h.Cache[file] = imgCache
 		return imgCache, fileHandle.Close()
 	}
 }
@@ -137,7 +144,7 @@ func (h *hashCache) Persist(file string) error {
 	}
 
 	// dump map to file
-	err = json.NewEncoder(f).Encode(h.cache)
+	err = json.NewEncoder(f).Encode(h.Cache)
 	if err != nil {
 		return err
 	}
