@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 type pair struct {
@@ -52,14 +53,26 @@ func main() {
 			continue
 		}
 
-		// open both images with image viewer "eog -- GNOME Image Viewer 41.1"
-		cmd := exec.Command("eog", p.Big)
-		cmd.Start()
+		var viewerCmd string
+		var goos = runtime.GOOS
+		switch goos {
+		case "windows":
+		case "darwin":
+			viewerCmd = "perview"
+		case "linux":
+			viewerCmd = "eog" // eog -- GNOME Image Viewer 41.1
+		default:
+			log.Fatalf("unsupported os: %s", goos)
+		}
+		// open both images with image viewer
+		cmd := exec.Command(viewerCmd, p.Big)
+		err = cmd.Start()
 		if err != nil {
 			log.Fatal(err)
 		}
-		cmdS := exec.Command("eog", p.Small)
-		cmdS.Run()
+
+		cmdS := exec.Command(viewerCmd, p.Small)
+		err = cmdS.Run()
 		if err != nil {
 			log.Fatal(err)
 		}
