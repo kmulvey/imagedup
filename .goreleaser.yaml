@@ -17,10 +17,10 @@ builds:
     # Defaults are darwin and linux.
     goos:
       - linux
-      - darwin
-      - freebsd
-      - netbsd
-      - openbsd
+        #- darwin
+        #- freebsd
+        #- netbsd
+        #- openbsd
 
     # GOARCH to build for.
     # For more info refer to: https://golang.org/doc/install/source#environment
@@ -28,13 +28,10 @@ builds:
     goarch:
       - amd64
       - arm
-      - arm64
 
     # List of combinations of GOOS + GOARCH + GOARM to ignore.
     # Default is empty.
     ignore:
-      - goos: openbsd
-        goarch: arm64
 
     # GOARM to build for when GOARCH is arm.
     # For more info refer to: https://golang.org/doc/install/source#environment
