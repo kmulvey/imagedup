@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
 	_ "net/http/pprof"
@@ -19,22 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const PromNamespace = "imagedup"
 const hashCacheFile = "hashcache.json"
-
-var deleteLogger *logrus.Logger
-
-type DeleteLogFormatter struct {
-}
-
-func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	var buf = new(bytes.Buffer)
-	buf.WriteString(fmt.Sprintf("\n%s: %s		", "big", entry.Data["big"].(string)))
-	buf.WriteString(fmt.Sprintf("%s: %s\n", "small", entry.Data["small"].(string)))
-
-	var js, _ = json.Marshal(entry.Data)
-	return append(js, '\n'), nil
-}
 
 // pair represents two images, their paths and thier element # in the files list
 type pair struct {
@@ -45,18 +28,7 @@ type pair struct {
 }
 
 func init() {
-
 	log.SetFormatter(&log.TextFormatter{})
-	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err == nil {
-		log.SetOutput(file)
-	} else {
-		log.Fatal("Failed to log to file, using default stderr")
-	}
-
-	deleteLogger = logrus.New()
-	deleteLogger.SetFormatter(new(DeleteLogFormatter))
-	deleteLogger.SetOutput(file)
 }
 
 func main() {
@@ -79,7 +51,7 @@ func main() {
 		log.Fatal("directory not provided")
 	}
 
-	var files, imageHashCache = setup(rootDir)
+	var files, imageHashCache, deleteLogger = setup(rootDir)
 
 	// db to store pairs that are alreay done
 	var dbLogger = logrus.New()
@@ -110,7 +82,7 @@ Loop:
 					close(killChan)
 					break Loop
 				}
-				diff(imageHashCache, p)
+				diff(imageHashCache, p, deleteLogger)
 			default:
 			}
 		}
@@ -124,7 +96,7 @@ Loop:
 	fmt.Println("Total time taken:", time.Since(start))
 }
 
-func setup(rootDir string) ([]string, *hashCache) {
+func setup(rootDir string) ([]string, *hashCache, *logrus.Logger) {
 
 	// list all the files
 	files, err := listFiles(rootDir)
@@ -140,10 +112,10 @@ func setup(rootDir string) ([]string, *hashCache) {
 	// starter stats
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 
-	return files, imageHashCache
+	return files, imageHashCache, NewDeleteLogger()
 }
 
-func diff(cache *hashCache, p pair) {
+func diff(cache *hashCache, p pair, deleteLogger *logrus.Logger) {
 	var start = time.Now()
 
 	var imgCacheOne, err = cache.GetHash(p.One)

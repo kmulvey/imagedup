@@ -7,6 +7,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const PromNamespace = "imagedup"
+
 var (
 	diffTime = prometheus.NewGauge(
 		prometheus.GaugeOpts{
