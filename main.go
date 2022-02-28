@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	_ "net/http/pprof"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"net/http"
@@ -32,7 +34,9 @@ func init() {
 }
 
 func main() {
-
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	var start = time.Now()
 
 	var gracefulShutdown = make(chan os.Signal, 1)
@@ -44,22 +48,23 @@ func main() {
 		log.Fatal(http.ListenAndServe(":5000", nil))
 	}()
 
+	// get user opts
 	var rootDir string
+	var threads int
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
+	flag.IntVar(&threads, "threads", 1, "number of threads to use")
 	flag.Parse()
 	if strings.TrimSpace(rootDir) == "" {
 		log.Fatal("directory not provided")
 	}
+	if threads < 0 || threads > runtime.GOMAXPROCS(0) {
+		threads = 1
+	}
 
-	var files, imageHashCache, deleteLogger = setup(rootDir)
-
-	// db to store pairs that are alreay done
-	var dbLogger = logrus.New()
-	dbLogger.SetLevel(log.WarnLevel)
-
+	var ctx, cancel = context.WithCancel(context.Background())
 	var pairChan = make(chan pair)
-	var killChan = make(chan struct{})
-	go streamFiles(files, pairChan, killChan)
+	var files, imageHashCache = setup(ctx, rootDir, threads, pairChan)
+	go streamFiles(ctx, files, pairChan)
 
 	fmt.Println("started, go to grafana to monitor")
 
@@ -69,22 +74,13 @@ Loop:
 		select {
 		case <-gracefulShutdown:
 			fmt.Println("shutting down")
-			close(killChan)
+			log.Info("shutting down")
+			cancel()
 			var err = shutdown(imageHashCache)
 			if err != nil {
 				log.Fatal("error shutting down", err)
 			}
 			break Loop
-		default:
-			select {
-			case p, open := <-pairChan:
-				if !open {
-					close(killChan)
-					break Loop
-				}
-				diff(imageHashCache, p, deleteLogger)
-			default:
-			}
 		}
 	}
 
@@ -96,7 +92,10 @@ Loop:
 	fmt.Println("Total time taken:", time.Since(start))
 }
 
-func setup(rootDir string) ([]string, *hashCache, *logrus.Logger) {
+func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair) ([]string, *hashCache) {
+
+	var deleteLogger = logrus.New()
+	deleteLogger.SetLevel(log.WarnLevel)
 
 	// list all the files
 	files, err := listFiles(rootDir)
@@ -107,40 +106,14 @@ func setup(rootDir string) ([]string, *hashCache, *logrus.Logger) {
 	handleErr("NewHashCache", err)
 	log.Infof("Loaded %d image hashes from disk cache", len(imageHashCache.Cache))
 
+	// init diff workers
+	NewDiffPool(ctx, threads, pairChan, imageHashCache, deleteLogger)
+
+	// init prom
 	go publishStats(imageHashCache)
 
 	// starter stats
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 
-	return files, imageHashCache, NewDeleteLogger()
-}
-
-func diff(cache *hashCache, p pair, deleteLogger *logrus.Logger) {
-	var start = time.Now()
-
-	var imgCacheOne, err = cache.GetHash(p.One)
-	handleErr("get hash: "+p.One, err)
-
-	imgCacheTwo, err := cache.GetHash(p.Two)
-	handleErr("get hash: "+p.One, err)
-
-	distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
-	handleErr("distance", err)
-
-	if distance < 10 {
-		if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
-			deleteLogger.WithFields(log.Fields{
-				"big":   p.One,
-				"small": p.Two,
-			}).Info("delete")
-		} else {
-			deleteLogger.WithFields(log.Fields{
-				"big":   p.Two,
-				"small": p.One,
-			}).Info("delete")
-		}
-	}
-
-	diffTime.Set(float64(time.Since(start)))
-	comparisonsCompleted.Inc()
+	return files, imageHashCache
 }

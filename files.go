@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -29,17 +30,15 @@ func listFiles(root string) ([]string, error) {
 	return allFiles, nil
 }
 
-func streamFiles(files []string, pairChan chan pair, killChan chan struct{}) {
+func streamFiles(ctx context.Context, files []string, pairChan chan pair) {
 	for i, one := range files {
 		for j, two := range files {
 			if i != j {
 				// this protects us from getting nil exception when shutting down
 				select {
-				case _, open := <-killChan:
-					if !open {
-						close(pairChan)
-						return
-					}
+				case <-ctx.Done():
+					close(pairChan)
+					return
 				default:
 					pairChan <- pair{One: one, Two: two, I: i, J: j}
 					pairTotal.Inc()
