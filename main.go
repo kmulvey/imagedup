@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,9 +33,6 @@ func init() {
 }
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 	var start = time.Now()
 
 	var gracefulShutdown = make(chan os.Signal, 1)
@@ -94,8 +90,7 @@ Loop:
 
 func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair) ([]string, *hashCache) {
 
-	var deleteLogger = logrus.New()
-	deleteLogger.SetLevel(log.WarnLevel)
+	var deleteLogger = NewDeleteLogger()
 
 	// list all the files
 	files, err := listFiles(rootDir)
