@@ -61,6 +61,11 @@ func NewHashCache(file string) (*hashCache, error) {
 			return nil, err
 		}
 	}
+	if info, err := f.Stat(); err != nil {
+		return hc, err
+	} else if info.Size() == 0 {
+		return hc, nil
+	}
 
 	// load map to file
 	var m = make(map[string]HashExportType)
@@ -83,18 +88,18 @@ func NewHashCache(file string) (*hashCache, error) {
 
 // NumImages returns the number of images in the cache
 func (h *hashCache) NumImages() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.lock.RLock()
+	defer h.lock.RUnlock()
 
 	return len(h.Cache)
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
 func (h *hashCache) GetHash(file string) (*imageCache, error) {
-	h.lock.Lock()
-	defer h.lock.Unlock()
 
+	h.lock.RLock()
 	var imgCache, ok = h.Cache[file]
+	h.lock.RUnlock()
 	if ok {
 		imageCacheHits.Inc()
 		return imgCache, nil
@@ -127,7 +132,9 @@ func (h *hashCache) GetHash(file string) (*imageCache, error) {
 			return imgCache, err
 		}
 
+		h.lock.Lock()
 		h.Cache[file] = imgCache
+		h.lock.Unlock()
 		return imgCache, fileHandle.Close()
 	}
 }
