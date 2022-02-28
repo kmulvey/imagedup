@@ -46,6 +46,7 @@ type HashExportType struct {
 	Kind goimagehash.Kind
 }
 
+// NewHashCache inits from the last time we ran
 func NewHashCache(file string) (*hashCache, error) {
 	var hc = new(hashCache)
 	hc.Cache = make(map[string]*imageCache)
@@ -80,6 +81,7 @@ func NewHashCache(file string) (*hashCache, error) {
 	return hc, nil
 }
 
+// NumImages returns the number of images in the cache
 func (h *hashCache) NumImages() int {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -87,6 +89,7 @@ func (h *hashCache) NumImages() int {
 	return len(h.Cache)
 }
 
+// GetHash gets the hash from cache or if it does not exist it calcs it
 func (h *hashCache) GetHash(file string) (*imageCache, error) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -129,6 +132,7 @@ func (h *hashCache) GetHash(file string) (*imageCache, error) {
 	}
 }
 
+// Persist writes the cache to disk
 // https://pkg.go.dev/github.com/corona10/goimagehash#ImageHash.Dump
 func (h *hashCache) Persist(file string) error {
 	h.lock.Lock()
