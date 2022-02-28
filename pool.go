@@ -75,6 +75,7 @@ func (dp *DiffPool) diff() {
 
 				diffTime.Set(float64(time.Since(start)))
 				comparisonsCompleted.Inc()
+			default:
 			}
 		}
 	}

@@ -64,22 +64,10 @@ func main() {
 
 	fmt.Println("started, go to grafana to monitor")
 
-	// feed the files into the diff workers
-Loop:
-	for {
-		select {
-		case <-gracefulShutdown:
-			fmt.Println("shutting down")
-			log.Info("shutting down")
-			cancel()
-			var err = shutdown(imageHashCache)
-			if err != nil {
-				log.Fatal("error shutting down", err)
-			}
-			break Loop
-		}
-	}
-
+	<-gracefulShutdown
+	//fmt.Println("shutting down")
+	log.Info("shutting down")
+	cancel()
 	var err = shutdown(imageHashCache)
 	if err != nil {
 		log.Fatal("error shutting down", err)
