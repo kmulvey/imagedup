@@ -52,41 +52,38 @@ func (dp *DiffPool) diff() {
 			dp.wg.Done()
 			return
 		default:
-			select {
-			case p, open := <-dp.workChan:
-				if !open {
-					dp.wg.Done()
-					return
-				}
-				var start = time.Now()
-
-				var imgCacheOne, err = dp.cache.GetHash(p.One)
-				handleErr("get hash: "+p.One, err)
-
-				imgCacheTwo, err := dp.cache.GetHash(p.Two)
-				handleErr("get hash: "+p.One, err)
-
-				distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
-				handleErr("distance", err)
-
-				if distance < 10 {
-					if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
-						dp.deleteLogger.WithFields(log.Fields{
-							"big":   p.One,
-							"small": p.Two,
-						}).Info("delete")
-					} else {
-						dp.deleteLogger.WithFields(log.Fields{
-							"big":   p.Two,
-							"small": p.One,
-						}).Info("delete")
-					}
-				}
-
-				diffTime.Set(float64(time.Since(start)))
-				comparisonsCompleted.Inc()
-			default:
+			p, open := <-dp.workChan
+			if !open {
+				dp.wg.Done()
+				return
 			}
+			var start = time.Now()
+
+			var imgCacheOne, err = dp.cache.GetHash(p.One)
+			handleErr("get hash: "+p.One, err)
+
+			imgCacheTwo, err := dp.cache.GetHash(p.Two)
+			handleErr("get hash: "+p.One, err)
+
+			distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
+			handleErr("distance", err)
+
+			if distance < 10 {
+				if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
+					dp.deleteLogger.WithFields(log.Fields{
+						"big":   p.One,
+						"small": p.Two,
+					}).Info("delete")
+				} else {
+					dp.deleteLogger.WithFields(log.Fields{
+						"big":   p.Two,
+						"small": p.One,
+					}).Info("delete")
+				}
+			}
+
+			diffTime.Set(float64(time.Since(start)))
+			comparisonsCompleted.Inc()
 		}
 	}
 }
