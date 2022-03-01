@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type pair struct {
@@ -26,13 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		var p pair
-		var err = json.Unmarshal(scanner.Bytes(), &p)
-		if err != nil {
-			log.Fatal(err)
-		}
+	for _, p := range dedupFile(file) {
 
 		// we could has already deleted one of them, so just go around
 		if !fileExists(p.Small) {
@@ -96,4 +91,28 @@ func fileExists(fileName string) bool {
 		return true
 	}
 	return false
+}
+
+func dedupFile(file *os.File) []pair {
+	var scanner = bufio.NewScanner(file)
+	var imagePairs []pair
+
+FileLoop:
+	for scanner.Scan() {
+		var filePair pair
+		var err = json.Unmarshal(scanner.Bytes(), &filePair)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, p := range imagePairs {
+			if filePair.Big == p.Big && filePair.Small == p.Small ||
+				filePair.Big == p.Small && filePair.Small == p.Big {
+				continue FileLoop
+			}
+		}
+		imagePairs = append(imagePairs, filePair)
+	}
+
+	return imagePairs
 }
