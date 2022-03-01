@@ -30,12 +30,6 @@ var (
 			Name:      "gc_time_nano",
 		},
 	)
-	gcOpTotal = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: PromNamespace,
-			Name:      "gc_op_total",
-		},
-	)
 	totalComparisons = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: PromNamespace,
@@ -71,7 +65,6 @@ var (
 func init() {
 	prometheus.MustRegister(diffTime)
 	prometheus.MustRegister(pairTotal)
-	prometheus.MustRegister(gcOpTotal)
 	prometheus.MustRegister(gcTime)
 	prometheus.MustRegister(totalComparisons)
 	prometheus.MustRegister(comparisonsCompleted)
@@ -86,7 +79,6 @@ func publishStats(imageCache *hashCache) {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
 
-		gcOpTotal.Set(float64(stats.NumGC))
 		gcTime.Set(float64(stats.PauseTotalNs))
 
 		imageCacheNumImages.Set(float64(imageCache.NumImages()))
