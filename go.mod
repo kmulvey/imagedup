@@ -4,12 +4,9 @@ go 1.17
 
 require (
 	github.com/corona10/goimagehash v1.0.3
-	github.com/kmulvey/goimagehash v1.1.0
-	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/prometheus/client_golang v1.11.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
 )
 
 require (
@@ -18,6 +15,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect

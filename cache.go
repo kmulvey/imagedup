@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kmulvey/goimagehash"
+	"github.com/corona10/goimagehash"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
