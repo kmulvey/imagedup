@@ -66,7 +66,7 @@ func main() {
 	// wait for all diff workers to finish or we get a shutdown signal
 	// whichever comes first
 	var workers, graceful = true, true
-	for workers == true && graceful == true {
+	for workers && graceful {
 		select {
 		case <-gracefulShutdown:
 			graceful = false
