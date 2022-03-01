@@ -21,7 +21,7 @@ func BenchmarkCacheFull(b *testing.B) {
 	_, err = c.GetHash("testimages/iceland.jpg")
 	assert.NoError(b, err)
 
-	assert.Equal(b, c.NumImages(), 1)
+	assert.Equal(b, 1, c.NumImages())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -40,5 +40,5 @@ func TestCacheEmpty(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, time.Since(start) < 10*time.Millisecond)
 
-	assert.Equal(t, c.NumImages(), 1)
+	assert.Equal(t, 1, c.NumImages())
 }

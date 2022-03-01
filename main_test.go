@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/jpeg"
 	"os"
@@ -15,23 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/image/draw"
 )
-
-func TestDupNames(t *testing.T) {
-	var dir = "/home/kmulvey/Documents"
-	var files, err = listFiles(dir)
-	assert.NoError(t, err)
-
-	var static bool
-	var fmap = make(map[string]bool)
-	for _, f := range files {
-		//var filename = strings.Replace(f, dir, "", 1)
-		if _, ok := fmap[f]; !ok {
-			fmap[f] = static
-		} else {
-			fmt.Println(f)
-		}
-	}
-}
 
 func BenchmarkCoronaPerceptionHash(b *testing.B) {
 
