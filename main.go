@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	_ "net/http/pprof"
 	"os/signal"
 	"runtime"
@@ -29,7 +28,7 @@ type pair struct {
 }
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{})
+	//	log.SetFormatter(&log.TextFormatter{})
 }
 
 func main() {
@@ -59,30 +58,42 @@ func main() {
 
 	var ctx, cancel = context.WithCancel(context.Background())
 	var pairChan = make(chan pair)
-	var files, imageHashCache = setup(ctx, rootDir, threads, pairChan)
+	var files, imageHashCache, dp = setup(ctx, rootDir, threads, pairChan)
 	go streamFiles(ctx, files, pairChan)
 
-	fmt.Println("started, go to grafana to monitor")
+	log.Info("Started, go to grafana to monitor")
 
-	<-gracefulShutdown
-	//fmt.Println("shutting down")
-	log.Info("shutting down")
+	// wait for all diff workers to finish or we get a shutdown signal
+	// whichever comes first
+	var workers, graceful = true, true
+	for workers == true && graceful == true {
+		select {
+		case <-gracefulShutdown:
+			graceful = false
+		case <-dp.wait():
+			workers = false
+		}
+	}
+
+	// shut everything down
+	log.Info("Shutting down")
 	cancel()
 	var err = shutdown(imageHashCache)
 	if err != nil {
 		log.Fatal("error shutting down", err)
 	}
 
-	fmt.Println("Total time taken:", time.Since(start))
+	log.Info("Total time taken: ", time.Since(start))
 }
 
-func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair) ([]string, *hashCache) {
+func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair) ([]string, *hashCache, *DiffPool) {
 
 	var deleteLogger = NewDeleteLogger()
 
 	// list all the files
 	files, err := listFiles(rootDir)
 	handleErr("listFiles", err)
+	log.Infof("Found %d images", len(files))
 
 	// init the image cache
 	imageHashCache, err := NewHashCache(hashCacheFile)
@@ -90,7 +101,7 @@ func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair)
 	log.Infof("Loaded %d image hashes from disk cache", len(imageHashCache.Cache))
 
 	// init diff workers
-	NewDiffPool(ctx, threads, pairChan, imageHashCache, deleteLogger)
+	var dp = NewDiffPool(ctx, threads, pairChan, imageHashCache, deleteLogger)
 
 	// init prom
 	go publishStats(imageHashCache)
@@ -98,5 +109,5 @@ func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair)
 	// starter stats
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 
-	return files, imageHashCache
+	return files, imageHashCache, dp
 }

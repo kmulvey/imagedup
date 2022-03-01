@@ -35,6 +35,16 @@ func NewDiffPool(ctx context.Context, numWorkers int, workChan chan pair, cache 
 	return dp
 }
 
+func (dp *DiffPool) wait() chan struct{} {
+	var c = make(chan struct{})
+	go func() {
+		dp.wg.Wait()
+		close(c)
+	}()
+
+	return c
+}
+
 func (dp *DiffPool) diff() {
 	for {
 		select {
