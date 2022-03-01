@@ -7,7 +7,7 @@ import (
 )
 
 func TestDupNames(t *testing.T) {
-	var dir = "/home/kmulvey/Documents"
+	var dir = "./testimages"
 	var files, err = listFiles(dir)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(files))
