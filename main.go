@@ -27,10 +27,6 @@ type pair struct {
 	Two string
 }
 
-func init() {
-	//	log.SetFormatter(&log.TextFormatter{})
-}
-
 func main() {
 	var start = time.Now()
 

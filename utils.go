@@ -13,28 +13,3 @@ func handleErr(prefix string, err error) {
 		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
 	}
 }
-
-/*
-// mergeStructs is a concurrent merge function that combines all input chans
-func merge(cs ...chan struct{}) <-chan struct{} {
-	var wg sync.WaitGroup
-	out := make(chan struct{})
-
-	output := func(c <-chan struct{}) {
-		for n := range c {
-			out <- n
-		}
-		wg.Done()
-	}
-	wg.Add(len(cs))
-	for _, c := range cs {
-		go output(c)
-	}
-
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-	return out
-}
-*/
