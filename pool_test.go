@@ -25,7 +25,7 @@ func BenchmarkDiff(b *testing.B) {
 
 	var logger = logrus.New()
 	logger.SetOutput(new(bytes.Buffer))
-	var dp = NewDiffPool(context.Background(), 1, pairChan, cache, logger)
+	var dp = NewDiffPool(context.Background(), 1, 10, pairChan, cache, logger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
