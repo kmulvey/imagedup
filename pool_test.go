@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"testing"
@@ -11,8 +12,8 @@ import (
 
 func TestDiff(t *testing.T) {
 	var result = testing.Benchmark(BenchmarkDiff)
-	assert.True(t, result.NsPerOp() < 800)
-	assert.True(t, float64(result.N)/result.T.Seconds() > 1e6)
+	assert.True(t, result.NsPerOp() < 15000)
+	assert.True(t, float64(result.N)/result.T.Seconds() > 75000)
 }
 
 func BenchmarkDiff(b *testing.B) {
@@ -23,7 +24,9 @@ func BenchmarkDiff(b *testing.B) {
 	assert.NoError(b, err)
 	defer assert.NoError(b, os.Remove("BenchmarkCacheFull.json"))
 
-	var dp = NewDiffPool(ctx, 1, pairChan, cache, logrus.New())
+	var logger = logrus.New()
+	logger.SetOutput(new(bytes.Buffer))
+	var dp = NewDiffPool(ctx, 1, pairChan, cache, logger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -46,6 +46,9 @@ func (dp *DiffPool) wait() chan struct{} {
 }
 
 func (dp *DiffPool) diff() {
+
+	var start time.Time
+
 	for {
 		select {
 		case <-dp.ctx.Done():
@@ -57,7 +60,7 @@ func (dp *DiffPool) diff() {
 				dp.wg.Done()
 				return
 			}
-			var start = time.Now()
+			start = time.Now()
 
 			var imgCacheOne, err = dp.cache.GetHash(p.One)
 			handleErr("get hash: "+p.One, err)
