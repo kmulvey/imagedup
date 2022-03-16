@@ -47,7 +47,11 @@ func (dp *DiffPool) wait() chan struct{} {
 
 func (dp *DiffPool) diff() {
 
+	// declare these here to reduce allocations in the loop
 	var start time.Time
+	var imgCacheOne, imgCacheTwo *imageCache
+	var err error
+	var distance int
 
 	for {
 		select {
@@ -62,13 +66,13 @@ func (dp *DiffPool) diff() {
 			}
 			start = time.Now()
 
-			var imgCacheOne, err = dp.cache.GetHash(p.One)
+			imgCacheOne, err = dp.cache.GetHash(p.One)
 			handleErr("get hash: "+p.One, err)
 
-			imgCacheTwo, err := dp.cache.GetHash(p.Two)
+			imgCacheTwo, err = dp.cache.GetHash(p.Two)
 			handleErr("get hash: "+p.One, err)
 
-			distance, err := imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
+			distance, err = imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
 			handleErr("distance", err)
 
 			if distance < 10 {
