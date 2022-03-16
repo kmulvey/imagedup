@@ -22,7 +22,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 1,
-  "iteration": 1647452304647,
+  "iteration": 1647454088069,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -373,7 +373,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": []
       },
@@ -644,6 +645,6 @@
   "timezone": "browser",
   "title": "Imagedup",
   "uid": "1ewoKQfnk",
-  "version": 23,
+  "version": 24,
   "weekStart": ""
 }
