@@ -48,7 +48,7 @@ func main() {
 	if strings.TrimSpace(rootDir) == "" {
 		log.Fatal("directory not provided")
 	}
-	if threads < 0 || threads > runtime.GOMAXPROCS(0) {
+	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
 		threads = 1
 	}
 
