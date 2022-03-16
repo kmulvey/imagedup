@@ -18,7 +18,6 @@ func TestDiff(t *testing.T) {
 
 func BenchmarkDiff(b *testing.B) {
 	// setup deps
-	var ctx, _ = context.WithCancel(context.Background())
 	var pairChan = make(chan pair)
 	var cache, err = NewHashCache("BenchmarkCacheFull.json")
 	assert.NoError(b, err)
@@ -26,7 +25,7 @@ func BenchmarkDiff(b *testing.B) {
 
 	var logger = logrus.New()
 	logger.SetOutput(new(bytes.Buffer))
-	var dp = NewDiffPool(ctx, 1, pairChan, cache, logger)
+	var dp = NewDiffPool(context.Background(), 1, pairChan, cache, logger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
