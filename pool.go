@@ -10,21 +10,23 @@ import (
 )
 
 type DiffPool struct {
-	ctx          context.Context
-	wg           *sync.WaitGroup
-	workChan     chan pair
-	cache        *hashCache
-	deleteLogger *logrus.Logger
+	ctx               context.Context
+	wg                *sync.WaitGroup
+	workChan          chan pair
+	cache             *hashCache
+	deleteLogger      *logrus.Logger
+	distanceThreshold int
 }
 
-func NewDiffPool(ctx context.Context, numWorkers int, workChan chan pair, cache *hashCache, deleteLogger *logrus.Logger) *DiffPool {
+func NewDiffPool(ctx context.Context, numWorkers, distanceThreshold int, workChan chan pair, cache *hashCache, deleteLogger *logrus.Logger) *DiffPool {
 
 	var dp = &DiffPool{
-		ctx:          ctx,
-		wg:           new(sync.WaitGroup),
-		workChan:     workChan,
-		cache:        cache,
-		deleteLogger: deleteLogger,
+		ctx:               ctx,
+		wg:                new(sync.WaitGroup),
+		workChan:          workChan,
+		cache:             cache,
+		deleteLogger:      deleteLogger,
+		distanceThreshold: distanceThreshold,
 	}
 
 	for i := 0; i < numWorkers; i++ {
@@ -75,7 +77,7 @@ func (dp *DiffPool) diff() {
 			distance, err = imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
 			handleErr("distance", err)
 
-			if distance < 10 {
+			if distance < dp.distanceThreshold {
 				if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
 					dp.deleteLogger.WithFields(log.Fields{
 						"big":   p.One,

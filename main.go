@@ -45,8 +45,10 @@ func main() {
 	// get user opts
 	var rootDir string
 	var threads int
+	var distanceThreshold int
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
-	flag.IntVar(&threads, "threads", 1, "number of threads to use")
+	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
+	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
 	flag.Parse()
 	if strings.TrimSpace(rootDir) == "" {
 		log.Fatal("directory not provided")
@@ -57,7 +59,7 @@ func main() {
 
 	var ctx, cancel = context.WithCancel(context.Background())
 	var pairChan = make(chan pair)
-	var files, imageHashCache, dp = setup(ctx, rootDir, threads, pairChan)
+	var files, imageHashCache, dp = setup(ctx, rootDir, threads, distanceThreshold, pairChan)
 	go streamFiles(ctx, files, pairChan)
 
 	log.Info("Started, go to grafana to monitor")
@@ -85,7 +87,7 @@ func main() {
 	log.Info("Total time taken: ", time.Since(start))
 }
 
-func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair) ([]string, *hashCache, *DiffPool) {
+func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, pairChan chan pair) ([]string, *hashCache, *DiffPool) {
 
 	var deleteLogger = NewDeleteLogger()
 
@@ -100,7 +102,7 @@ func setup(ctx context.Context, rootDir string, threads int, pairChan chan pair)
 	log.Infof("Loaded %d image hashes from disk cache", len(imageHashCache.Cache))
 
 	// init diff workers
-	var dp = NewDiffPool(ctx, threads, pairChan, imageHashCache, deleteLogger)
+	var dp = NewDiffPool(ctx, threads, distanceThreshold, pairChan, imageHashCache, deleteLogger)
 
 	// init prom
 	go publishStats(imageHashCache)
