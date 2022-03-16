@@ -11,6 +11,7 @@ import (
 func TestCacheFull(t *testing.T) {
 	var result = testing.Benchmark(BenchmarkCacheFull)
 	assert.True(t, result.NsPerOp() < 500)
+	assert.True(t, float64(result.N)/result.T.Seconds() > 4e7)
 }
 
 func BenchmarkCacheFull(b *testing.B) {
