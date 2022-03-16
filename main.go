@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	_ "net/http/pprof"
 	"os/signal"
 	"runtime"
 	"syscall"
@@ -29,6 +28,10 @@ type pair struct {
 
 func main() {
 	var start = time.Now()
+
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
 
 	var gracefulShutdown = make(chan os.Signal, 1)
 	signal.Notify(gracefulShutdown, os.Interrupt, syscall.SIGTERM)
