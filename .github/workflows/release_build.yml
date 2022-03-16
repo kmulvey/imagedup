@@ -10,7 +10,7 @@ jobs:
     name: ImageDup build
     strategy:
       matrix:
-        go-version: [1.18.x]
+        go-version: [1.17.x]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go 
         uses: actions/setup-go@v2
         with:
-          go-version: 1.18
+          go-version: 1.17
         id: go
 
       - name: golangci-lint
@@ -48,7 +48,7 @@ jobs:
       - name: Set up Go 
         uses: actions/setup-go@v2
         with:
-          go-version: 1.18
+          go-version: 1.17
         id: go
 
       - name: Run GoReleaser
