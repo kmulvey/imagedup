@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+/* this type of test will be flappy in ci/cd unfortunatly
 func TestDiff(t *testing.T) {
 	var result = testing.Benchmark(BenchmarkDiff)
 	assert.True(t, result.NsPerOp() < 15000)
 	assert.True(t, float64(result.N)/result.T.Seconds() > 75000)
 }
+*/
 
 func BenchmarkDiff(b *testing.B) {
 	// setup deps
