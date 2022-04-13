@@ -1,7 +1,7 @@
 # ImageDup
 [![ImageDup](https://github.com/kmulvey/imagedup/actions/workflows/release_build.yml/badge.svg)](https://github.com/kmulvey/imagedup/actions/workflows/release_build.yml) [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://vshymanskyy.github.io/StandWithUkraine)
 
-Got a lot of images with many duplicates, maybe of different sizesimagedup uses [perceptual hashing](https://en.wikipedia.org/wiki/Perceptual_hashing) to find images that 
+Got a lot of images with many duplicates? Maybe of different sizes? imagedup uses [perceptual hashing](https://en.wikipedia.org/wiki/Perceptual_hashing) to find images that are close in appearance but not exact. 
 
 ## Run
 ```
