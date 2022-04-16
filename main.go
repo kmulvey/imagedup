@@ -30,7 +30,8 @@ func main() {
 	var start = time.Now()
 
 	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
 	var gracefulShutdown = make(chan os.Signal, 1)
