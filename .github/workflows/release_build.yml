@@ -25,7 +25,8 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: latest
-      
+          args: --timeout=5m
+
       - name: Build & Test
         run: |
           go mod tidy
