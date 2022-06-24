@@ -41,7 +41,7 @@ func TestCacheEmpty(t *testing.T) {
 	var start = time.Now()
 	_, err = c.GetHash("testimages/iceland.jpg")
 	assert.NoError(t, err)
-	assert.True(t, time.Since(start) < 200*time.Millisecond)
+	assert.True(t, time.Since(start) < 300*time.Millisecond)
 
 	assert.Equal(t, 1, c.NumImages())
 }
