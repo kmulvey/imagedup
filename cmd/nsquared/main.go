@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os/signal"
 	"runtime"
 	"syscall"
@@ -12,19 +13,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kmulvey/imagedup/internal/app/imagedup/diffpool"
+	"github.com/kmulvey/imagedup/internal/app/imagedup/logger"
+	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
+	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
 const hashCacheFile = "hashcache.json"
-
-// pair represents two images, their paths and thier element # in the files list
-type pair struct {
-	I   int
-	J   int
-	One string
-	Two string
-}
 
 func main() {
 	var start = time.Now()
@@ -59,7 +56,7 @@ func main() {
 	}
 
 	var ctx, cancel = context.WithCancel(context.Background())
-	var pairChan = make(chan pair)
+	var pairChan = make(chan types.Pair)
 	var files, imageHashCache, dp = setup(ctx, rootDir, threads, distanceThreshold, pairChan)
 	go streamFiles(ctx, files, pairChan)
 
@@ -72,7 +69,7 @@ func main() {
 		select {
 		case <-gracefulShutdown:
 			graceful = false
-		case <-dp.wait():
+		case <-dp.Wait():
 			workers = false
 		}
 	}
@@ -88,9 +85,9 @@ func main() {
 	log.Info("Total time taken: ", time.Since(start))
 }
 
-func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, pairChan chan pair) ([]string, *hashCache, *DiffPool) {
+func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, pairChan chan types.Pair) ([]string, *cache.HashCache, *diffpool.DiffPool) {
 
-	var deleteLogger = NewDeleteLogger()
+	var deleteLogger = logger.NewDeleteLogger()
 
 	// list all the files
 	files, err := listFiles(rootDir)
@@ -98,12 +95,12 @@ func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, 
 	log.Infof("Found %d images", len(files))
 
 	// init the image cache
-	imageHashCache, err := NewHashCache(hashCacheFile)
+	imageHashCache, err := cache.NewHashCache(hashCacheFile)
 	handleErr("NewHashCache", err)
 	log.Infof("Loaded %d image hashes from disk cache", len(imageHashCache.Cache))
 
 	// init diff workers
-	var dp = NewDiffPool(ctx, threads, distanceThreshold, pairChan, imageHashCache, deleteLogger)
+	var dp = diffpool.NewDiffPool(ctx, threads, distanceThreshold, pairChan, imageHashCache, deleteLogger)
 
 	// init prom
 	go publishStats(imageHashCache)
@@ -112,4 +109,23 @@ func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, 
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 
 	return files, imageHashCache, dp
+}
+
+// shutdown gracefully shuts everything down and stores caches for next time
+func shutdown(cache *cache.HashCache) error {
+
+	var err = cache.Persist(hashCacheFile)
+	if err != nil {
+		return err
+	}
+
+	return cache.Persist(hashCacheFile)
+}
+
+// handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
+func handleErr(prefix string, err error) {
+	if err != nil {
+		fmt.Println(prefix, err)
+		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
+	}
 }
