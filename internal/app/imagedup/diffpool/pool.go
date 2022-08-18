@@ -1,10 +1,12 @@
-package main
+package diffpool
 
 import (
 	"context"
 	"sync"
 	"time"
 
+	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
+	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
@@ -12,13 +14,13 @@ import (
 type DiffPool struct {
 	ctx               context.Context
 	wg                *sync.WaitGroup
-	workChan          chan pair
-	cache             *hashCache
+	workChan          chan types.Pair
+	cache             *cache.HashCache
 	deleteLogger      *logrus.Logger
 	distanceThreshold int
 }
 
-func NewDiffPool(ctx context.Context, numWorkers, distanceThreshold int, workChan chan pair, cache *hashCache, deleteLogger *logrus.Logger) *DiffPool {
+func NewDiffPool(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *cache.HashCache, deleteLogger *logrus.Logger) *DiffPool {
 
 	var dp = &DiffPool{
 		ctx:               ctx,
@@ -37,7 +39,7 @@ func NewDiffPool(ctx context.Context, numWorkers, distanceThreshold int, workCha
 	return dp
 }
 
-func (dp *DiffPool) wait() chan struct{} {
+func (dp *DiffPool) Wait() chan struct{} {
 	var c = make(chan struct{})
 	go func() {
 		dp.wg.Wait()
