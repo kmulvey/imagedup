@@ -1,4 +1,4 @@
-package main
+package logger
 
 import (
 	"bytes"
@@ -10,8 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type DeleteLogFormatter struct {
-}
+type DeleteLogFormatter struct{}
 
 func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var buf = new(bytes.Buffer)
@@ -21,6 +20,7 @@ func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var js, _ = json.Marshal(entry.Data)
 	return append(js, '\n'), nil
 }
+
 func NewDeleteLogger() *logrus.Logger {
 	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
