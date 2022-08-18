@@ -1,4 +1,4 @@
-package main
+package cache
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ type imageCache struct {
 	image.Config `json:"-"`
 }
 
-type hashCache struct {
+type HashCache struct {
 	Cache map[string]*imageCache
 	lock  sync.RWMutex
 }
@@ -47,8 +47,8 @@ type HashExportType struct {
 }
 
 // NewHashCache inits from the last time we ran
-func NewHashCache(file string) (*hashCache, error) {
-	var hc = new(hashCache)
+func NewHashCache(file string) (*HashCache, error) {
+	var hc = new(HashCache)
 	hc.Cache = make(map[string]*imageCache)
 
 	// try to open the file, if it doesnt exist, create it
@@ -87,7 +87,7 @@ func NewHashCache(file string) (*hashCache, error) {
 }
 
 // NumImages returns the number of images in the cache
-func (h *hashCache) NumImages() int {
+func (h *HashCache) NumImages() int {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
@@ -95,7 +95,7 @@ func (h *hashCache) NumImages() int {
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
-func (h *hashCache) GetHash(file string) (*imageCache, error) {
+func (h *HashCache) GetHash(file string) (*imageCache, error) {
 
 	h.lock.RLock()
 	var imgCache, ok = h.Cache[file]
@@ -141,7 +141,7 @@ func (h *hashCache) GetHash(file string) (*imageCache, error) {
 
 // Persist writes the cache to disk
 // https://pkg.go.dev/github.com/corona10/goimagehash#ImageHash.Dump
-func (h *hashCache) Persist(file string) error {
+func (h *HashCache) Persist(file string) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
