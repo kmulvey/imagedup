@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os/signal"
+	"regexp"
 	"runtime"
 	"syscall"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/kmulvey/imagedup/internal/app/imagedup/diffpool"
 	"github.com/kmulvey/imagedup/internal/app/imagedup/logger"
+	"github.com/kmulvey/imagedup/internal/app/imagedup/stream"
 	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
 	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/kmulvey/path"
@@ -59,7 +61,7 @@ func main() {
 	var ctx, cancel = context.WithCancel(context.Background())
 	var pairChan = make(chan types.Pair)
 	var files, imageHashCache, dp = setup(ctx, rootDir, threads, distanceThreshold, pairChan)
-	go streamFiles(ctx, files, pairChan)
+	go stream.StreamFiles(ctx, files, pairChan)
 
 	log.Info("Started, go to grafana to monitor")
 
@@ -91,8 +93,9 @@ func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, 
 	var deleteLogger = logger.NewDeleteLogger()
 
 	// list all the files
-	files, err := path.ListFiles(rootDir)
+	var files, err = path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
+	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d images", len(files))
 
 	// init the image cache
@@ -109,7 +112,7 @@ func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, 
 	// starter stats
 	totalComparisons.Set(float64(len(files) * (len(files) - 1)))
 
-	return files, imageHashCache, dp
+	return fileNames, imageHashCache, dp
 }
 
 // shutdown gracefully shuts everything down and stores caches for next time
