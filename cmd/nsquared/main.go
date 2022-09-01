@@ -17,6 +17,7 @@ import (
 	"github.com/kmulvey/imagedup/internal/app/imagedup/logger"
 	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
 	"github.com/kmulvey/imagedup/pkg/types"
+	"github.com/kmulvey/path"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
@@ -90,7 +91,7 @@ func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, 
 	var deleteLogger = logger.NewDeleteLogger()
 
 	// list all the files
-	files, err := listFiles(rootDir)
+	files, err := path.ListFiles(rootDir)
 	handleErr("listFiles", err)
 	log.Infof("Found %d images", len(files))
 
@@ -125,7 +126,6 @@ func shutdown(cache *cache.HashCache) error {
 // handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
 func handleErr(prefix string, err error) {
 	if err != nil {
-		fmt.Println(prefix, err)
 		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
 	}
 }
