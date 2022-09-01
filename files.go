@@ -1,34 +1,8 @@
-package main
+package imagedup
 
 import (
 	"context"
-	"io/ioutil"
-	"path"
-	"strings"
 )
-
-// listFiles recursivly traverses the root directory and adds every .jpg to a string slice and returns it
-func listFiles(root string) ([]string, error) {
-	var allFiles []string
-	files, err := ioutil.ReadDir(root)
-	if err != nil {
-		return allFiles, err
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			var subFiles, err = listFiles(path.Join(root, file.Name()))
-			if err != nil {
-				return allFiles, err
-			}
-			allFiles = append(allFiles, subFiles...)
-		} else {
-			if strings.HasSuffix(file.Name(), ".jpg") {
-				allFiles = append(allFiles, path.Join(root, file.Name()))
-			}
-		}
-	}
-	return allFiles, nil
-}
 
 func streamFiles(ctx context.Context, files []string, pairChan chan pair) {
 	for i, one := range files {
