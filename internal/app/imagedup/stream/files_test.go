@@ -1,4 +1,4 @@
-package imagedup
+package stream
 
 import (
 	"testing"

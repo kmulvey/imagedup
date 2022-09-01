@@ -1,10 +1,12 @@
-package imagedup
+package stream
 
 import (
 	"context"
+
+	"github.com/kmulvey/imagedup/pkg/types"
 )
 
-func streamFiles(ctx context.Context, files []string, pairChan chan pair) {
+func StreamFiles(ctx context.Context, files []string, pairChan chan types.Pair) {
 	for i, one := range files {
 		for j, two := range files {
 			if i != j {
@@ -14,7 +16,7 @@ func streamFiles(ctx context.Context, files []string, pairChan chan pair) {
 					close(pairChan)
 					return
 				default:
-					pairChan <- pair{One: one, Two: two, I: i, J: j}
+					pairChan <- types.Pair{One: one, Two: two, I: i, J: j}
 					pairTotal.Inc()
 				}
 			}
