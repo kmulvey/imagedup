@@ -1,59 +1,67 @@
-package diffpool
+package imagedup
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
+	"github.com/kmulvey/goutils"
 	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
 	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
-type DiffPool struct {
+type differ struct {
 	ctx               context.Context
 	wg                *sync.WaitGroup
 	workChan          chan types.Pair
+	errors            chan error
 	cache             *cache.HashCache
 	deleteLogger      *logrus.Logger
 	distanceThreshold int
+	*stats
 }
 
-func New(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *cache.HashCache, deleteLogger *logrus.Logger) *DiffPool {
+func newDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *cache.HashCache, deleteLogger *logrus.Logger, stats *stats) *differ {
 
-	var dp = &DiffPool{
+	if numWorkers <= 0 || numWorkers > runtime.GOMAXPROCS(0)-1 {
+		numWorkers = 1
+	}
+
+	var dp = &differ{
 		ctx:               ctx,
 		wg:                new(sync.WaitGroup),
 		workChan:          workChan,
+		errors:            make(chan error),
 		cache:             cache,
 		deleteLogger:      deleteLogger,
 		distanceThreshold: distanceThreshold,
 	}
 
+	var errorChans = make([]chan error, numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		dp.wg.Add(1)
-		go dp.diff()
+		var errors = make(chan error)
+		errorChans[i] = errors
+		go dp.run(errors)
 	}
+	dp.errors = goutils.MergeChannels(errorChans...)
 
 	return dp
 }
 
-func (dp *DiffPool) Wait() chan struct{} {
-	var c = make(chan struct{})
-	go func() {
-		dp.wg.Wait()
-		close(c)
-	}()
-
-	return c
+func (dp *differ) wait() chan error {
+	return dp.errors
 }
 
-func (dp *DiffPool) diff() {
+func (dp *differ) run(errors chan error) {
 
 	// declare these here to reduce allocations in the loop
 	var start time.Time
-	var imgCacheOne, imgCacheTwo *imageCache
+	var imgCacheOne, imgCacheTwo *cache.ImageCache
 	var err error
 	var distance int
 
@@ -71,13 +79,22 @@ func (dp *DiffPool) diff() {
 			start = time.Now()
 
 			imgCacheOne, err = dp.cache.GetHash(p.One)
-			handleErr("get hash: "+p.One, err)
+			if err != nil {
+				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.One, err)
+				continue
+			}
 
 			imgCacheTwo, err = dp.cache.GetHash(p.Two)
-			handleErr("get hash: "+p.One, err)
+			if err != nil {
+				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.Two, err)
+				continue
+			}
 
 			distance, err = imgCacheOne.ImageHash.Distance(imgCacheTwo.ImageHash)
-			handleErr("distance", err)
+			if err != nil {
+				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.Two, err)
+				continue
+			}
 
 			if distance < dp.distanceThreshold {
 				if (imgCacheOne.Config.Height * imgCacheOne.Config.Width) > (imgCacheTwo.Config.Height * imgCacheTwo.Config.Width) {
@@ -93,8 +110,8 @@ func (dp *DiffPool) diff() {
 				}
 			}
 
-			diffTime.Set(float64(time.Since(start)))
-			comparisonsCompleted.Inc()
+			dp.stats.DiffTime.Set(float64(time.Since(start)))
+			dp.stats.ComparisonsCompleted.Inc()
 		}
 	}
 }

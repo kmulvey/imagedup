@@ -1,4 +1,4 @@
-package diffpool
+package imagedup
 
 import (
 	"bytes"
