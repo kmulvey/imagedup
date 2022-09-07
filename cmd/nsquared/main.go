@@ -95,8 +95,9 @@ func setup(ctx context.Context, rootDir string, threads, distanceThreshold int, 
 	// list all the files
 	var files, err = path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
+	files = path.OnlyDirs(files)
 	var fileNames = path.OnlyNames(files)
-	log.Infof("Found %d images", len(files))
+	log.Infof("Found %d dirs", len(files))
 
 	// init the image cache
 	imageHashCache, err := cache.NewHashCache(hashCacheFile)
