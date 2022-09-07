@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
+	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,6 +13,7 @@ type ImageDup struct {
 	*stats
 	*cache.HashCache
 	deleteLogger *logrus.Logger
+	*differ
 }
 
 func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
@@ -31,7 +33,12 @@ func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFil
 		return nil, err
 	}
 
-	NewDiffPool()
+	var workChan = make(chan types.Pair)
+	id.differ = newDiffer(ctx, numWorkers, distanceThreshold, workChan, id.HashCache, id.deleteLogger, id.stats)
 
 	return id, nil
+}
+
+func (id *ImageDup) Errors() error {
+	return <-id.differ.wait()
 }
