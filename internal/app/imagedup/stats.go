@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type Stats struct {
+type stats struct {
 	PromNamespace        string
 	DiffTime             prometheus.Gauge
 	PairTotal            prometheus.Counter
@@ -20,8 +20,8 @@ type Stats struct {
 	PairCacheSize        prometheus.Gauge
 }
 
-func NewStats(promNamespace string) *Stats {
-	var s = new(Stats)
+func newStats(promNamespace string) *stats {
+	var s = new(stats)
 	s.PromNamespace = promNamespace
 
 	s.DiffTime = prometheus.NewGauge(
@@ -86,8 +86,8 @@ func NewStats(promNamespace string) *Stats {
 	return s
 }
 
-// PublishStats publishes go GC stats + cache size to prom every 10 seconds
-func (s *Stats) PublishStats(imageCache *cache.HashCache) {
+// publishStats publishes go GC stats + cache size to prom every 10 seconds
+func (s *stats) publishStats(imageCache *cache.HashCache) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)

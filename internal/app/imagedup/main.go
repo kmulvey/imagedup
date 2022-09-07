@@ -8,7 +8,7 @@ import (
 
 type ImageDup struct {
 	context.Context
-	*Stats
+	*stats
 	*cache.HashCache
 }
 
@@ -16,7 +16,7 @@ func NewImageDup(promNamespace, hashCacheFile string) (*ImageDup, error) {
 	var id = new(ImageDup)
 	var err error
 
-	id.Stats = NewStats(promNamespace)
+	id.stats = newStats(promNamespace)
 
 	id.HashCache, err = cache.NewHashCache(hashCacheFile, promNamespace)
 	if err != nil {
