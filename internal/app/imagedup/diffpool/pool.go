@@ -20,7 +20,7 @@ type DiffPool struct {
 	distanceThreshold int
 }
 
-func NewDiffPool(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *cache.HashCache, deleteLogger *logrus.Logger) *DiffPool {
+func New(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *cache.HashCache, deleteLogger *logrus.Logger) *DiffPool {
 
 	var dp = &DiffPool{
 		ctx:               ctx,

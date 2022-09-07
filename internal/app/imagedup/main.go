@@ -14,10 +14,11 @@ type ImageDup struct {
 	deleteLogger *logrus.Logger
 }
 
-func NewImageDup(promNamespace, hashCacheFile, deleteLogFile string) (*ImageDup, error) {
+func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
 	var id = new(ImageDup)
 	var err error
 
+	id.Context = ctx
 	id.stats = newStats(promNamespace)
 
 	id.HashCache, err = cache.NewHashCache(hashCacheFile, promNamespace)
@@ -29,6 +30,8 @@ func NewImageDup(promNamespace, hashCacheFile, deleteLogFile string) (*ImageDup,
 	if err != nil {
 		return nil, err
 	}
+
+	NewDiffPool()
 
 	return id, nil
 }
