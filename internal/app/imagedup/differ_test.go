@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
+	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,8 +22,8 @@ func TestDiff(t *testing.T) {
 
 func BenchmarkDiff(b *testing.B) {
 	// setup deps
-	var pairChan = make(chan pair)
-	var cache, err = NewHashCache("BenchmarkCacheFull.json")
+	var pairChan = make(chan types.Pair)
+	var cache, err = cache.NewHashCache("BenchmarkCacheFull.json")
 	assert.NoError(b, err)
 	defer assert.NoError(b, os.Remove("BenchmarkCacheFull.json"))
 
@@ -31,7 +33,7 @@ func BenchmarkDiff(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pairChan <- pair{One: "testimages/iceland.jpg", Two: "testimages/iceland.jpg"}
+		pairChan <- types.Pair{One: "testimages/iceland.jpg", Two: "testimages/iceland.jpg"}
 	}
 
 	dp.wait()
