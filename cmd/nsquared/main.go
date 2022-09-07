@@ -1,29 +1,6 @@
 package main
 
-import (
-	"context"
-	"flag"
-	"fmt"
-	"os/signal"
-	"regexp"
-	"runtime"
-	"syscall"
-
-	"net/http"
-	"os"
-	"strings"
-	"time"
-
-	"github.com/kmulvey/imagedup/internal/app/imagedup/diffpool"
-	"github.com/kmulvey/imagedup/internal/app/imagedup/logger"
-	"github.com/kmulvey/imagedup/internal/app/imagedup/stream"
-	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
-	"github.com/kmulvey/imagedup/pkg/types"
-	"github.com/kmulvey/path"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-)
-
+/*
 const hashCacheFile = "hashcache.json"
 
 func main() {
@@ -133,3 +110,4 @@ func handleErr(prefix string, err error) {
 		log.Fatal(fmt.Errorf("%s: %w", prefix, err))
 	}
 }
+*/
