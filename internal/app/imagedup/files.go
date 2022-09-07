@@ -15,7 +15,7 @@ func (id *ImageDup) streamFiles(files []string, pairChan chan types.Pair) {
 					return
 				default:
 					pairChan <- types.Pair{One: one, Two: two, I: i, J: j}
-					id.Stats.PairTotal.Inc()
+					id.stats.PairTotal.Inc()
 				}
 			}
 		}
