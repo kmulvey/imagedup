@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
 type DeleteLogFormatter struct{}
@@ -21,15 +20,15 @@ func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return append(js, '\n'), nil
 }
 
-func NewDeleteLogger() *logrus.Logger {
-	var file, err = os.OpenFile("delete.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+func NewDeleteLogger(filename string) (*logrus.Logger, error) {
+	var file, err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatal("Failed to log to file: ", err)
+		return nil, fmt.Errorf("DeleteLogger could not open file: %s, err: %w", filename, err)
 	}
 
 	var deleteLogger = logrus.New()
 	deleteLogger.SetFormatter(new(DeleteLogFormatter))
 	deleteLogger.SetOutput(file)
 
-	return deleteLogger
+	return deleteLogger, nil
 }
