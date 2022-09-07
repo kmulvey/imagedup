@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"os"
@@ -19,6 +20,7 @@ type HashCache struct {
 	imageCacheMisses prometheus.Counter
 }
 
+// imageCache is the minimal data needed to compare images and is held in-memory by HashCache.Cache
 type imageCache struct {
 	*goimagehash.ImageHash
 	image.Config `json:"-"`
@@ -56,13 +58,13 @@ func NewHashCache(file, promNamespace string) (*HashCache, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			_, err = os.Create(file)
-			return hc, err
+			return hc, fmt.Errorf("HashCache error creating file: %s, err: %w", file, err)
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", file, err)
 		}
 	}
 	if info, err := f.Stat(); err != nil {
-		return hc, err
+		return hc, fmt.Errorf("HashCache error stating file: %s, err: %w", file, err)
 	} else if info.Size() == 0 {
 		return hc, nil
 	}
@@ -71,7 +73,7 @@ func NewHashCache(file, promNamespace string) (*HashCache, error) {
 	var m = make(map[string]hashExportType)
 	err = json.NewDecoder(f).Decode(&m)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("HashCache error decoding json file: %s, err: %w", file, err)
 	}
 
 	for name, hash := range m {
@@ -80,7 +82,7 @@ func NewHashCache(file, promNamespace string) (*HashCache, error) {
 
 	err = f.Close()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", file, err)
 	}
 
 	return hc, nil
@@ -100,6 +102,7 @@ func (h *HashCache) GetHash(file string) (*imageCache, error) {
 	h.lock.RLock()
 	var imgCache, ok = h.Cache[file]
 	h.lock.RUnlock()
+
 	if ok {
 		h.imageCacheHits.Inc()
 		return imgCache, nil
@@ -109,33 +112,38 @@ func (h *HashCache) GetHash(file string) (*imageCache, error) {
 
 		var fileHandle, err = os.Open(file)
 		if err != nil {
-			return imgCache, err
+			return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", file, err)
 		}
 
 		img, err := jpeg.Decode(fileHandle)
 		if err != nil {
-			return imgCache, err
+			return nil, fmt.Errorf("HashCache error decoding jpeg file: %s, err: %w", file, err)
 		}
 
 		imgCache.ImageHash, err = goimagehash.PerceptionHash(img)
 		if err != nil {
-			return imgCache, err
+			return nil, fmt.Errorf("HashCache error calculating hash for file: %s, err: %w", file, err)
 		}
 
 		_, err = fileHandle.Seek(0, 0) // reset file reader
 		if err != nil {
-			return imgCache, err
+			return nil, fmt.Errorf("HashCache error rewinding file: %s, err: %w", file, err)
 		}
 
 		imgCache.Config, err = jpeg.DecodeConfig(fileHandle)
 		if err != nil {
-			return imgCache, err
+			return nil, fmt.Errorf("HashCache error decoding jpeg config file: %s, err: %w", file, err)
 		}
 
 		h.lock.Lock()
 		h.Cache[file] = imgCache
 		h.lock.Unlock()
-		return imgCache, fileHandle.Close()
+
+		if err = fileHandle.Close(); err != nil {
+			return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", file, err)
+		}
+
+		return imgCache, nil
 	}
 }
 
@@ -145,7 +153,7 @@ func (h *HashCache) Persist(file string) error {
 
 	var f, err = os.Create(file)
 	if err != nil {
-		return err
+		return fmt.Errorf("HashCache error creating file: %s, err: %w", file, err)
 	}
 
 	// dump map to file
@@ -158,8 +166,12 @@ func (h *HashCache) Persist(file string) error {
 
 	err = json.NewEncoder(f).Encode(m)
 	if err != nil {
-		return err
+		return fmt.Errorf("HashCache error json encoding file: %s, err: %w", file, err)
 	}
 
-	return f.Close()
+	if err = f.Close(); err != nil {
+		return fmt.Errorf("HashCache error closing file: %s, err: %w", file, err)
+	}
+
+	return nil
 }
