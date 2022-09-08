@@ -53,7 +53,7 @@ func main() {
 		switch goos {
 		case "windows":
 		case "darwin":
-			viewerCmd = "perview"
+			viewerCmd = "preview"
 		case "linux":
 			viewerCmd = "eog" // eog -- GNOME Image Viewer 41.1
 		default:
