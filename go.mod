@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.3.1
+	github.com/kmulvey/path v0.6.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0

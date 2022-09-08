@@ -142,6 +142,8 @@ github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kmulvey/goutils v0.3.1 h1:VeBnUspYeGzLIQGGva+ftw3wu8pWCDX2377N29UORrQ=
 github.com/kmulvey/goutils v0.3.1/go.mod h1:DCUhjtkRdyTKfAWTNgYCL/JhQeYLGZLMuP1YeubD+g0=
+github.com/kmulvey/path v0.6.0 h1:9GYYO8LwkGqDSaN1Pcluxm0BPBA1bUvQJDrp08F4zmE=
+github.com/kmulvey/path v0.6.0/go.mod h1:u97sgsO0Gu4hbiaZUWHapc/Fn7nXJTX+5afajRDfo+k=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
