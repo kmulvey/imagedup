@@ -1,36 +1,27 @@
-package imagedup
+package stats
 
 import (
 	"runtime"
 	"time"
 
-	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
+	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type stats struct {
-	PromNamespace        string
-	DiffTime             prometheus.Gauge
-	PairTotal            prometheus.Counter
-	GCTime               prometheus.Gauge
-	TotalComparisons     prometheus.Gauge
-	ComparisonsCompleted prometheus.Gauge
-	ImageCacheSize       prometheus.Gauge
-	ImageCacheNumImages  prometheus.Gauge
-	PairCacheSize        prometheus.Gauge
+type Stats struct {
+	PromNamespace       string
+	PairTotal           prometheus.Counter
+	GCTime              prometheus.Gauge
+	TotalComparisons    prometheus.Gauge
+	ImageCacheSize      prometheus.Gauge
+	ImageCacheNumImages prometheus.Gauge
+	PairCacheSize       prometheus.Gauge
 }
 
-func newStats(promNamespace string) *stats {
-	var s = new(stats)
+func New(promNamespace string) *Stats {
+	var s = new(Stats)
 	s.PromNamespace = promNamespace
 
-	s.DiffTime = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: promNamespace,
-			Name:      "diff_time_nano",
-			Help:      "How long it takes to diff two images, in nanoseconds.",
-		},
-	)
 	s.PairTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -48,12 +39,6 @@ func newStats(promNamespace string) *stats {
 		prometheus.GaugeOpts{
 			Namespace: promNamespace,
 			Name:      "total_comparisons",
-		},
-	)
-	s.ComparisonsCompleted = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: promNamespace,
-			Name:      "comparisons_completed",
 		},
 	)
 	s.ImageCacheSize = prometheus.NewGauge(
@@ -74,11 +59,9 @@ func newStats(promNamespace string) *stats {
 			Name:      "pair_cache_size",
 		},
 	)
-	prometheus.MustRegister(s.DiffTime)
 	prometheus.MustRegister(s.PairTotal)
 	prometheus.MustRegister(s.GCTime)
 	prometheus.MustRegister(s.TotalComparisons)
-	prometheus.MustRegister(s.ComparisonsCompleted)
 	prometheus.MustRegister(s.ImageCacheSize)
 	prometheus.MustRegister(s.ImageCacheNumImages)
 	prometheus.MustRegister(s.PairCacheSize)
@@ -87,7 +70,7 @@ func newStats(promNamespace string) *stats {
 }
 
 // publishStats publishes go GC stats + cache size to prom every 10 seconds
-func (s *stats) publishStats(imageCache *cache.HashCache) {
+func (s *Stats) publishStats(imageCache *hash.Cache) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)

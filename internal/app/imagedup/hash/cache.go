@@ -14,14 +14,14 @@ import (
 
 // Cache stores a map of image hashes from corona10/goimagehash
 type Cache struct {
-	store            map[string]*ImageCache
+	store            map[string]*Image
 	lock             sync.RWMutex
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
 }
 
-// ImageCache is the minimal data needed to compare images and is held in-memory by HashCache.Cache
-type ImageCache struct {
+// Image is the minimal data needed to compare images and is held in-memory by HashCache.Cache
+type Image struct {
 	*goimagehash.ImageHash
 	image.Config `json:"-"`
 }
@@ -37,7 +37,7 @@ type hashExportType struct {
 // If the file does not exist, it will be created.
 func NewCache(file, promNamespace string) (*Cache, error) {
 	var hc = new(Cache)
-	hc.store = make(map[string]*ImageCache)
+	hc.store = make(map[string]*Image)
 	hc.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -77,7 +77,7 @@ func NewCache(file, promNamespace string) (*Cache, error) {
 	}
 
 	for name, hash := range m {
-		hc.store[name] = &ImageCache{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
+		hc.store[name] = &Image{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
 	}
 
 	err = f.Close()
@@ -97,7 +97,7 @@ func (h *Cache) NumImages() int {
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
-func (h *Cache) GetHash(file string) (*ImageCache, error) {
+func (h *Cache) GetHash(file string) (*Image, error) {
 
 	h.lock.RLock()
 	var imgCache, ok = h.store[file]
@@ -108,7 +108,7 @@ func (h *Cache) GetHash(file string) (*ImageCache, error) {
 		return imgCache, nil
 	} else {
 		h.imageCacheMisses.Inc()
-		var imgCache = new(ImageCache)
+		var imgCache = new(Image)
 
 		var fileHandle, err = os.Open(file)
 		if err != nil {

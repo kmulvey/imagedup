@@ -1,4 +1,4 @@
-package imagedup
+package hash
 
 import (
 	"context"
@@ -8,30 +8,31 @@ import (
 	"time"
 
 	"github.com/kmulvey/goutils"
-	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
 	"github.com/kmulvey/imagedup/pkg/types"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
-type differ struct {
-	ctx               context.Context
-	wg                *sync.WaitGroup
-	workChan          chan types.Pair
-	errors            chan error
-	cache             *cache.HashCache
-	deleteLogger      *logrus.Logger
-	distanceThreshold int
-	*stats
+type Differ struct {
+	ctx                  context.Context
+	wg                   *sync.WaitGroup
+	workChan             chan types.Pair
+	errors               chan error
+	cache                *Cache
+	deleteLogger         *logrus.Logger
+	distanceThreshold    int
+	diffTime             prometheus.Gauge
+	comparisonsCompleted prometheus.Gauge
 }
 
-func newDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *cache.HashCache, deleteLogger *logrus.Logger, stats *stats) *differ {
+func NewDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan chan types.Pair, cache *Cache, deleteLogger *logrus.Logger, promNamespace string) *Differ {
 
 	if numWorkers <= 0 || numWorkers > runtime.GOMAXPROCS(0)-1 {
 		numWorkers = 1
 	}
 
-	var dp = &differ{
+	var dp = &Differ{
 		ctx:               ctx,
 		wg:                new(sync.WaitGroup),
 		workChan:          workChan,
@@ -39,7 +40,20 @@ func newDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan 
 		cache:             cache,
 		deleteLogger:      deleteLogger,
 		distanceThreshold: distanceThreshold,
+		diffTime: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: promNamespace,
+				Name:      "diff_time_nano",
+				Help:      "How long it takes to diff two images, in nanoseconds.",
+			}),
+		comparisonsCompleted: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: promNamespace,
+				Name:      "comparisons_completed",
+			}),
 	}
+	prometheus.MustRegister(dp.diffTime)
+	prometheus.MustRegister(dp.comparisonsCompleted)
 
 	var errorChans = make([]chan error, numWorkers)
 	for i := 0; i < numWorkers; i++ {
@@ -48,20 +62,20 @@ func newDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan 
 		errorChans[i] = errors
 		go dp.run(errors)
 	}
-	dp.errors = goutils.MergeChannels(errorChans...)
 
+	dp.errors = goutils.MergeChannels(errorChans...)
 	return dp
 }
 
-func (dp *differ) wait() chan error {
+func (dp *Differ) Wait() chan error {
 	return dp.errors
 }
 
-func (dp *differ) run(errors chan error) {
+func (dp *Differ) run(errors chan error) {
 
 	// declare these here to reduce allocations in the loop
 	var start time.Time
-	var imgCacheOne, imgCacheTwo *cache.ImageCache
+	var imgCacheOne, imgCacheTwo *Image
 	var err error
 	var distance int
 
@@ -110,8 +124,8 @@ func (dp *differ) run(errors chan error) {
 				}
 			}
 
-			dp.stats.DiffTime.Set(float64(time.Since(start)))
-			dp.stats.ComparisonsCompleted.Inc()
+			dp.diffTime.Set(float64(time.Since(start)))
+			dp.comparisonsCompleted.Inc()
 		}
 	}
 }

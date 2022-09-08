@@ -1,4 +1,4 @@
-package imagedup
+package hash
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kmulvey/imagedup/pkg/imagedup/cache"
 	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -23,13 +22,13 @@ func TestDiff(t *testing.T) {
 func BenchmarkDiff(b *testing.B) {
 	// setup deps
 	var pairChan = make(chan types.Pair)
-	var cache, err = cache.NewHashCache("BenchmarkCacheFull.json")
+	var cache, err = NewCache("BenchmarkCacheFull.json", "BenchmarkDiff")
 	assert.NoError(b, err)
 	defer assert.NoError(b, os.Remove("BenchmarkCacheFull.json"))
 
 	var logger = logrus.New()
 	logger.SetOutput(new(bytes.Buffer))
-	var dp = NewDiffPool(context.Background(), 1, 10, pairChan, cache, logger)
+	var dp = NewDiffer(context.Background(), 1, 10, pairChan, cache, logger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
