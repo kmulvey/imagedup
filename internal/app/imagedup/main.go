@@ -14,6 +14,7 @@ type ImageDup struct {
 	*hash.Cache
 	deleteLogger *logrus.Logger
 	*hash.Differ
+	images chan types.Pair
 }
 
 func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
@@ -21,6 +22,7 @@ func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFil
 	var err error
 
 	id.Context = ctx
+	id.images = make(chan types.Pair)
 	id.stats = newStats(promNamespace)
 
 	id.Cache, err = hash.NewCache(hashCacheFile, promNamespace)
@@ -33,10 +35,19 @@ func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFil
 		return nil, err
 	}
 
-	var workChan = make(chan types.Pair)
-	id.Differ = hash.NewDiffer(ctx, numWorkers, distanceThreshold, workChan, id.Cache, id.deleteLogger, promNamespace)
+	id.Differ = hash.NewDiffer(ctx, numWorkers, distanceThreshold, id.images, id.Cache, id.deleteLogger, promNamespace)
+
+	go id.stats.publishStats(id.Cache)
 
 	return id, nil
+}
+
+func (id *ImageDup) Start(files []string) {
+	id.streamFiles(files, id.images)
+}
+
+func (id *ImageDup) Shutdown(cacheFile string) error {
+	return id.Cache.Persist(cacheFile)
 }
 
 func (id *ImageDup) Errors() error {
