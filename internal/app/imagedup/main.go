@@ -43,7 +43,7 @@ func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFil
 }
 
 func (id *ImageDup) Start(files []string) {
-	id.streamFiles(files, id.images)
+	id.streamFiles(files)
 }
 
 func (id *ImageDup) Shutdown(cacheFile string) error {
