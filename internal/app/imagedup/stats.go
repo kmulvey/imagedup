@@ -1,4 +1,4 @@
-package stats
+package imagedup
 
 import (
 	"runtime"
@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type Stats struct {
+type stats struct {
 	PromNamespace       string
 	PairTotal           prometheus.Counter
 	GCTime              prometheus.Gauge
@@ -18,8 +18,8 @@ type Stats struct {
 	PairCacheSize       prometheus.Gauge
 }
 
-func New(promNamespace string) *Stats {
-	var s = new(Stats)
+func newStats(promNamespace string) *stats {
+	var s = new(stats)
 	s.PromNamespace = promNamespace
 
 	s.PairTotal = prometheus.NewCounter(
@@ -70,7 +70,7 @@ func New(promNamespace string) *Stats {
 }
 
 // publishStats publishes go GC stats + cache size to prom every 10 seconds
-func (s *Stats) publishStats(imageCache *hash.Cache) {
+func (s *stats) publishStats(imageCache *hash.Cache) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
