@@ -1,4 +1,4 @@
-package cache
+package hash
 
 import (
 	"encoding/json"
@@ -12,9 +12,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// HashCache stores a map of image hashes from corona10/goimagehash
-type HashCache struct {
-	Cache            map[string]*ImageCache
+// Cache stores a map of image hashes from corona10/goimagehash
+type Cache struct {
+	store            map[string]*ImageCache
 	lock             sync.RWMutex
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
@@ -33,11 +33,11 @@ type hashExportType struct {
 	Kind goimagehash.Kind
 }
 
-// NewHashCache reads the given file to rebuild its map from the last time it was run.
+// NewCache reads the given file to rebuild its map from the last time it was run.
 // If the file does not exist, it will be created.
-func NewHashCache(file, promNamespace string) (*HashCache, error) {
-	var hc = new(HashCache)
-	hc.Cache = make(map[string]*ImageCache)
+func NewCache(file, promNamespace string) (*Cache, error) {
+	var hc = new(Cache)
+	hc.store = make(map[string]*ImageCache)
 	hc.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -77,7 +77,7 @@ func NewHashCache(file, promNamespace string) (*HashCache, error) {
 	}
 
 	for name, hash := range m {
-		hc.Cache[name] = &ImageCache{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
+		hc.store[name] = &ImageCache{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
 	}
 
 	err = f.Close()
@@ -89,18 +89,18 @@ func NewHashCache(file, promNamespace string) (*HashCache, error) {
 }
 
 // NumImages returns the number of images in the cache
-func (h *HashCache) NumImages() int {
+func (h *Cache) NumImages() int {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
-	return len(h.Cache)
+	return len(h.store)
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
-func (h *HashCache) GetHash(file string) (*ImageCache, error) {
+func (h *Cache) GetHash(file string) (*ImageCache, error) {
 
 	h.lock.RLock()
-	var imgCache, ok = h.Cache[file]
+	var imgCache, ok = h.store[file]
 	h.lock.RUnlock()
 
 	if ok {
@@ -136,7 +136,7 @@ func (h *HashCache) GetHash(file string) (*ImageCache, error) {
 		}
 
 		h.lock.Lock()
-		h.Cache[file] = imgCache
+		h.store[file] = imgCache
 		h.lock.Unlock()
 
 		if err = fileHandle.Close(); err != nil {
@@ -149,7 +149,7 @@ func (h *HashCache) GetHash(file string) (*ImageCache, error) {
 
 // Persist writes the cache to disk
 // https://pkg.go.dev/github.com/corona10/goimagehash#ImageHash.Dump
-func (h *HashCache) Persist(file string) error {
+func (h *Cache) Persist(file string) error {
 
 	var f, err = os.Create(file)
 	if err != nil {
@@ -159,7 +159,7 @@ func (h *HashCache) Persist(file string) error {
 	// dump map to file
 	h.lock.Lock()
 	var m = make(map[string]hashExportType)
-	for name, hash := range h.Cache {
+	for name, hash := range h.store {
 		m[name] = hashExportType{Hash: hash.GetHash(), Kind: hash.GetKind()}
 	}
 	h.lock.Unlock()

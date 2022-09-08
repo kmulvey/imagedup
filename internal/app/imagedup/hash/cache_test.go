@@ -1,4 +1,4 @@
-package cache
+package hash
 
 import (
 	"os"
@@ -17,7 +17,7 @@ func TestCacheFull(t *testing.T) {
 */
 
 func BenchmarkCacheFull(b *testing.B) {
-	var c, err = NewHashCache("BenchmarkCacheFull.json", "BenchmarkCacheFull")
+	var c, err = NewCache("BenchmarkCacheFull.json", "BenchmarkCacheFull")
 	assert.NoError(b, err)
 	defer assert.NoError(b, os.Remove("BenchmarkCacheFull.json"))
 
@@ -34,7 +34,7 @@ func BenchmarkCacheFull(b *testing.B) {
 }
 
 func TestCacheEmpty(t *testing.T) {
-	var c, err = NewHashCache("TestCacheEmpty.json", "TestCacheEmpty")
+	var c, err = NewCache("TestCacheEmpty.json", "TestCacheEmpty")
 	assert.NoError(t, err)
 	defer assert.NoError(t, os.Remove("TestCacheEmpty.json"))
 
