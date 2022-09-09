@@ -17,7 +17,7 @@ var expectedPairs = map[string]struct{}{
 func TestStreamFiles(t *testing.T) {
 	t.Parallel()
 
-	var id, err = NewImageDup(context.Background(), "TestStreamFiles", "cacheFile.json", "outputFile.log", 2, 10)
+	var id, err = NewImageDup("TestStreamFiles", "cacheFile.json", "outputFile.log", 2, 10)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
@@ -35,7 +35,7 @@ func TestStreamFiles(t *testing.T) {
 	files = path.OnlyFiles(files)
 	var fileNames = path.OnlyNames(files)
 
-	id.streamFiles(fileNames)
+	id.streamFiles(context.Background(), fileNames)
 
 	<-done
 }
@@ -43,8 +43,7 @@ func TestStreamFiles(t *testing.T) {
 func TestStreamFilesCancel(t *testing.T) {
 	t.Parallel()
 
-	var ctx, cancel = context.WithCancel(context.Background())
-	var id, err = NewImageDup(ctx, "TestStreamFilesCancel", "cacheFile.json", "outputFile.log", 2, 10)
+	var id, err = NewImageDup("TestStreamFilesCancel", "cacheFile.json", "outputFile.log", 2, 10)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
@@ -58,7 +57,8 @@ func TestStreamFilesCancel(t *testing.T) {
 		close(done)
 	}()
 
-	go id.streamFiles(make([]string, 100))
+	var ctx, cancel = context.WithCancel(context.Background())
+	go id.streamFiles(ctx, make([]string, 100))
 	cancel()
 
 	<-done

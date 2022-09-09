@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// start er up
-	var id, err = imagedup.NewImageDup(ctx, "imagedup", cacheFile, outputFile, threads, distanceThreshold)
+	var id, err = imagedup.NewImageDup("imagedup", cacheFile, outputFile, threads, distanceThreshold)
 	handleErr("NewImageDup", err)
 
 	// list all the files
@@ -83,7 +83,7 @@ func main() {
 	log.Infof("Found %d dirs", len(files))
 
 	log.Info("Started, go to grafana to monitor")
-	var errors = id.Run(fileNames)
+	var errors = id.Run(ctx, fileNames)
 
 	// wait for all diff workers to finish or we get a shutdown signal
 	// whichever comes first

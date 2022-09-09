@@ -1,17 +1,19 @@
 package imagedup
 
 import (
+	"context"
+
 	"github.com/kmulvey/imagedup/pkg/types"
 )
 
-func (id *ImageDup) streamFiles(files []string) {
+func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 	var dedup = make(map[string]struct{})
 	for i, one := range files {
 		for j, two := range files {
 			if i != j {
 				// this protects us from getting nil exception when shutting down
 				select {
-				case <-id.Context.Done():
+				case <-ctx.Done():
 					close(id.images)
 					return
 				default:

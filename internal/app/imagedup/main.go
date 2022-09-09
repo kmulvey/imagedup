@@ -9,7 +9,6 @@ import (
 )
 
 type ImageDup struct {
-	context.Context
 	*stats
 	*hash.Cache
 	deleteLogger *logrus.Logger
@@ -17,11 +16,10 @@ type ImageDup struct {
 	images chan types.Pair
 }
 
-func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
+func NewImageDup(promNamespace, hashCacheFile, deleteLogFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
 	var id = new(ImageDup)
 	var err error
 
-	id.Context = ctx
 	id.images = make(chan types.Pair)
 	id.stats = newStats(promNamespace)
 
@@ -35,16 +33,16 @@ func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFil
 		return nil, err
 	}
 
-	id.Differ = hash.NewDiffer(ctx, numWorkers, distanceThreshold, id.images, id.Cache, id.deleteLogger, promNamespace)
+	id.Differ = hash.NewDiffer(numWorkers, distanceThreshold, id.images, id.Cache, id.deleteLogger, promNamespace)
 
 	go id.stats.publishStats(id.Cache)
 
 	return id, nil
 }
 
-func (id *ImageDup) Run(files []string) chan error {
-	var errors = id.Differ.Run()
-	id.streamFiles(files)
+func (id *ImageDup) Run(ctx context.Context, files []string) chan error {
+	var errors = id.Differ.Run(ctx)
+	id.streamFiles(ctx, files)
 	return errors
 }
 
