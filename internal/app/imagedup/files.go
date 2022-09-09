@@ -5,6 +5,7 @@ import (
 )
 
 func (id *ImageDup) streamFiles(files []string) {
+	var dedup = make(map[string]struct{})
 	for i, one := range files {
 		for j, two := range files {
 			if i != j {
@@ -14,8 +15,12 @@ func (id *ImageDup) streamFiles(files []string) {
 					close(id.images)
 					return
 				default:
-					id.images <- types.Pair{One: one, Two: two, I: i, J: j}
-					id.stats.PairTotal.Inc()
+					if _, found := dedup[one+two]; !found {
+						dedup[one+two] = struct{}{}
+						dedup[two+one] = struct{}{}
+						id.images <- types.Pair{One: one, Two: two, I: i, J: j}
+						id.stats.PairTotal.Inc()
+					}
 				}
 			}
 		}
