@@ -35,7 +35,14 @@ func main() {
 	// prom
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Fatal(http.ListenAndServe(":5000", nil))
+		s := &http.Server{
+			Addr: ":5000",
+			// Handler:        promhttp.Handler(),
+			ReadTimeout:    10 * time.Second,
+			WriteTimeout:   10 * time.Second,
+			MaxHeaderBytes: 1 << 20,
+		}
+		log.Fatal(s.ListenAndServe())
 	}()
 
 	// get user opts
