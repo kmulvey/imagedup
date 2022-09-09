@@ -44,22 +44,30 @@ func main() {
 	var outputFile string
 	var threads int
 	var distanceThreshold int
+	var help bool
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
 	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes")
 	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
+	flag.BoolVar(&help, "h", false, "print help")
+	flag.BoolVar(&help, "help", false, "print help")
 	flag.Parse()
+
+	if help {
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
 	if strings.TrimSpace(rootDir) == "" {
 		log.Fatal("directory not provided")
 	}
 	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
 		threads = 1
 	}
-	if filepath.Ext(cacheFile) != "json" {
+	if filepath.Ext(cacheFile) != ".json" {
 		log.Fatal("cache file must have extension .json")
 	}
-	if filepath.Ext(outputFile) != "log" {
+	if filepath.Ext(outputFile) != ".log" {
 		log.Fatal("output file must have extension .log")
 	}
 
