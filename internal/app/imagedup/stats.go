@@ -9,13 +9,13 @@ import (
 )
 
 type stats struct {
-	PromNamespace       string
 	PairTotal           prometheus.Counter
 	GCTime              prometheus.Gauge
 	TotalComparisons    prometheus.Gauge
 	ImageCacheSize      prometheus.Gauge
 	ImageCacheNumImages prometheus.Gauge
 	PairCacheSize       prometheus.Gauge
+	PromNamespace       string
 }
 
 func newStats(promNamespace string) *stats {
