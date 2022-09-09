@@ -19,6 +19,7 @@ type Differ struct {
 	errors               chan error
 	cache                *Cache
 	deleteLogger         *logrus.Logger
+	numWorkers           int
 	distanceThreshold    int
 	diffTime             prometheus.Gauge
 	comparisonsCompleted prometheus.Gauge
@@ -37,6 +38,7 @@ func NewDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan 
 		cache:             cache,
 		deleteLogger:      deleteLogger,
 		distanceThreshold: distanceThreshold,
+		numWorkers:        numWorkers,
 		diffTime: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: promNamespace,
@@ -52,22 +54,22 @@ func NewDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan 
 	prometheus.MustRegister(dp.diffTime)
 	prometheus.MustRegister(dp.comparisonsCompleted)
 
-	var errorChans = make([]chan error, numWorkers)
-	for i := 0; i < numWorkers; i++ {
-		var errors = make(chan error)
-		errorChans[i] = errors
-		go dp.run(errors)
-	}
-
-	dp.errors = goutils.MergeChannels(errorChans...)
 	return dp
 }
 
-func (dp *Differ) Wait() chan error {
+func (dp *Differ) Run() chan error {
+	var errorChans = make([]chan error, dp.numWorkers)
+	for i := 0; i < dp.numWorkers; i++ {
+		var errors = make(chan error)
+		errorChans[i] = errors
+		go dp.diffWorker(errors)
+	}
+
+	dp.errors = goutils.MergeChannels(errorChans...)
 	return dp.errors
 }
 
-func (dp *Differ) run(errors chan error) {
+func (dp *Differ) diffWorker(errors chan error) {
 
 	// declare these here to reduce allocations in the loop
 	var start time.Time

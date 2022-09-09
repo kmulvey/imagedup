@@ -42,14 +42,12 @@ func NewImageDup(ctx context.Context, promNamespace, hashCacheFile, deleteLogFil
 	return id, nil
 }
 
-func (id *ImageDup) Start(files []string) {
+func (id *ImageDup) Run(files []string) chan error {
+	var errors = id.Differ.Run()
 	id.streamFiles(files)
+	return errors
 }
 
 func (id *ImageDup) Shutdown(cacheFile string) error {
 	return id.Cache.Persist(cacheFile)
-}
-
-func (id *ImageDup) Errors() error {
-	return <-id.Differ.Wait()
 }
