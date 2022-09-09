@@ -14,14 +14,14 @@ import (
 )
 
 type Differ struct {
+	diffTime             prometheus.Gauge
+	comparisonsCompleted prometheus.Gauge
 	workChan             chan types.Pair
 	errors               chan error
 	cache                *Cache
 	deleteLogger         *logrus.Logger
 	numWorkers           int
 	distanceThreshold    int
-	diffTime             prometheus.Gauge
-	comparisonsCompleted prometheus.Gauge
 }
 
 func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, cache *Cache, deleteLogger *logrus.Logger, promNamespace string) *Differ {

@@ -14,10 +14,10 @@ import (
 
 // Cache stores a map of image hashes from corona10/goimagehash
 type Cache struct {
-	store            map[string]*Image
-	lock             sync.RWMutex
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
+	store            map[string]*Image
+	lock             sync.RWMutex
 }
 
 // Image is the minimal data needed to compare images and is held in-memory by HashCache.Cache
