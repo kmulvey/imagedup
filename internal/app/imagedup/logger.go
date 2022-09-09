@@ -31,7 +31,7 @@ func (f *deleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func newDeleteLogger(filename string) (*logrus.Logger, error) {
-	var file, err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	var file, err = os.Create(filename)
 	if err != nil {
 		return nil, fmt.Errorf("DeleteLogger could not open file: %s, err: %w", filename, err)
 	}
