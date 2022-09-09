@@ -36,8 +36,7 @@ func main() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		s := &http.Server{
-			Addr: ":5000",
-			// Handler:        promhttp.Handler(),
+			Addr:           ":5000",
 			ReadTimeout:    10 * time.Second,
 			WriteTimeout:   10 * time.Second,
 			MaxHeaderBytes: 1 << 20,
