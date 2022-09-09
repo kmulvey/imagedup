@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"sync"
 	"time"
 
 	"github.com/kmulvey/goutils"
@@ -16,7 +15,6 @@ import (
 
 type Differ struct {
 	ctx                  context.Context
-	wg                   *sync.WaitGroup
 	workChan             chan types.Pair
 	errors               chan error
 	cache                *Cache
@@ -34,7 +32,6 @@ func NewDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan 
 
 	var dp = &Differ{
 		ctx:               ctx,
-		wg:                new(sync.WaitGroup),
 		workChan:          workChan,
 		errors:            make(chan error),
 		cache:             cache,
@@ -57,7 +54,6 @@ func NewDiffer(ctx context.Context, numWorkers, distanceThreshold int, workChan 
 
 	var errorChans = make([]chan error, numWorkers)
 	for i := 0; i < numWorkers; i++ {
-		dp.wg.Add(1)
 		var errors = make(chan error)
 		errorChans[i] = errors
 		go dp.run(errors)
@@ -82,12 +78,12 @@ func (dp *Differ) run(errors chan error) {
 	for {
 		select {
 		case <-dp.ctx.Done():
-			dp.wg.Done()
+			close(errors)
 			return
 		default:
 			p, open := <-dp.workChan
 			if !open {
-				dp.wg.Done()
+				close(errors)
 				return
 			}
 			start = time.Now()
