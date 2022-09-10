@@ -17,6 +17,7 @@ type Cache struct {
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
 	store            map[string]*Image
+	storeFileName    string
 	lock             sync.RWMutex
 }
 
@@ -38,6 +39,7 @@ type hashExportType struct {
 func NewCache(file, promNamespace string) (*Cache, error) {
 	var hc = new(Cache)
 	hc.store = make(map[string]*Image)
+	hc.storeFileName = file
 	hc.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -144,11 +146,11 @@ func (h *Cache) GetHash(file string) (*Image, error) {
 
 // Persist writes the cache to disk
 // https://pkg.go.dev/github.com/corona10/goimagehash#ImageHash.Dump
-func (h *Cache) Persist(file string) error {
+func (h *Cache) Persist() error {
 
-	var f, err = os.Create(file)
+	var f, err = os.Create(h.storeFileName)
 	if err != nil {
-		return fmt.Errorf("HashCache error creating file: %s, err: %w", file, err)
+		return fmt.Errorf("HashCache error creating file: %s, err: %w", h.storeFileName, err)
 	}
 
 	// dump map to file
@@ -161,11 +163,11 @@ func (h *Cache) Persist(file string) error {
 
 	err = json.NewEncoder(f).Encode(m)
 	if err != nil {
-		return fmt.Errorf("HashCache error json encoding file: %s, err: %w", file, err)
+		return fmt.Errorf("HashCache error json encoding file: %s, err: %w", h.storeFileName, err)
 	}
 
 	if err = f.Close(); err != nil {
-		return fmt.Errorf("HashCache error closing file: %s, err: %w", file, err)
+		return fmt.Errorf("HashCache error closing file: %s, err: %w", h.storeFileName, err)
 	}
 
 	return nil

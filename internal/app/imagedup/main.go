@@ -47,8 +47,8 @@ func (id *ImageDup) Run(ctx context.Context, files []string) chan error {
 	return errors
 }
 
-func (id *ImageDup) Shutdown(cacheFile string) error {
-	return id.Cache.Persist(cacheFile)
+func (id *ImageDup) Shutdown() error {
+	return id.Cache.Persist()
 }
 
 func (id *ImageDup) CollectResults(results chan hash.DiffResult) {

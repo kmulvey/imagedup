@@ -106,7 +106,7 @@ func main() {
 	// shut everything down
 	log.Info("Shutting down")
 	cancel()
-	err = id.Shutdown(cacheFile)
+	err = id.Shutdown()
 	if err != nil {
 		log.Fatal("error shutting down", err)
 	}
