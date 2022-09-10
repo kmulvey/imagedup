@@ -6,6 +6,7 @@ import (
 	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
 	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type ImageDup struct {
@@ -48,4 +49,20 @@ func (id *ImageDup) Run(ctx context.Context, files []string) chan error {
 
 func (id *ImageDup) Shutdown(cacheFile string) error {
 	return id.Cache.Persist(cacheFile)
+}
+
+func (id *ImageDup) CollectResults(results chan hash.DiffResult) {
+	for result := range results {
+		if result.OneArea > result.TwoArea {
+			id.deleteLogger.WithFields(log.Fields{
+				"big":   result.One,
+				"small": result.Two,
+			}).Info("delete")
+		} else {
+			id.deleteLogger.WithFields(log.Fields{
+				"big":   result.Two,
+				"small": result.One,
+			}).Info("delete")
+		}
+	}
 }
