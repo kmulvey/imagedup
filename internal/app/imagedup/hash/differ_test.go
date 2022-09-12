@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kmulvey/imagedup/pkg/types"
+	"github.com/kmulvey/imagedup/pkg/imagedup/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,7 +47,7 @@ func TestDiffer(t *testing.T) {
 		assert.Equal(t, 1, i)
 		close(done)
 	}()
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(time.Second) // wait for things to speed up, 1s is high for cheap ci/cd hw
 
 	inputImages <- types.Pair{One: "../testimages/iceland.jpg", Two: "../testimages/iceland.jpg"}
 	inputImages <- types.Pair{One: "../testimages/iceland-small.jpg", Two: "../testimages/iceland.jpg"}
