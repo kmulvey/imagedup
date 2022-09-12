@@ -89,17 +89,27 @@ func main() {
 	log.Infof("Found %d dirs", len(files))
 
 	log.Info("Started, go to grafana to monitor")
-	var errors = id.Run(ctx, fileNames)
+	var results, errors = id.Run(ctx, fileNames)
 
 	// wait for all diff workers to finish or we get a shutdown signal
 	// whichever comes first
-	var workers, graceful = true, true
-	for workers && graceful {
+	var graceful = true
+	for graceful && results != nil && errors != nil {
 		select {
 		case <-gracefulShutdown:
 			graceful = false
-		case <-errors:
-			workers = false
+		case result, open := <-results:
+			if !open {
+				results = nil
+				continue
+			}
+			log.Info(result)
+		case err, open := <-errors:
+			if !open {
+				errors = nil
+				continue
+			}
+			log.Error(err)
 		}
 	}
 
