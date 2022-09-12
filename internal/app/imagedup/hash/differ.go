@@ -9,7 +9,6 @@ import (
 	"github.com/kmulvey/goutils"
 	"github.com/kmulvey/imagedup/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 )
 
 // Differ
@@ -17,9 +16,7 @@ type Differ struct {
 	diffTime             prometheus.Gauge
 	comparisonsCompleted prometheus.Gauge
 	inputImages          chan types.Pair
-	errors               chan error
 	cache                *Cache
-	deleteLogger         *logrus.Logger
 	numWorkers           int
 	distanceThreshold    int
 }
@@ -32,7 +29,7 @@ type DiffResult struct {
 	TwoArea int
 }
 
-func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, cache *Cache, deleteLogger *logrus.Logger, promNamespace string) *Differ {
+func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, cache *Cache, promNamespace string) *Differ {
 
 	if numWorkers <= 0 || numWorkers > runtime.GOMAXPROCS(0)-1 {
 		numWorkers = 1
@@ -40,9 +37,7 @@ func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, c
 
 	var dp = &Differ{
 		inputImages:       inputImages,
-		errors:            make(chan error),
 		cache:             cache,
-		deleteLogger:      deleteLogger,
 		distanceThreshold: distanceThreshold,
 		numWorkers:        numWorkers,
 		diffTime: prometheus.NewGauge(
@@ -63,9 +58,10 @@ func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, c
 	return dp
 }
 
-func (dp *Differ) Run(ctx context.Context) chan error {
+func (dp *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
 	var errorChans = make([]chan error, dp.numWorkers)
 	var resultChans = make([]chan DiffResult, dp.numWorkers)
+
 	for i := 0; i < dp.numWorkers; i++ {
 		var errors = make(chan error)
 		var results = make(chan DiffResult)
@@ -74,8 +70,7 @@ func (dp *Differ) Run(ctx context.Context) chan error {
 		go dp.diffWorker(ctx, results, errors)
 	}
 
-	dp.errors = goutils.MergeChannels(errorChans...)
-	return dp.errors
+	return goutils.MergeChannels(resultChans...), goutils.MergeChannels(errorChans...)
 }
 
 func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, errors chan error) {
@@ -96,6 +91,7 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 			p, open := <-dp.inputImages
 			if !open {
 				close(errors)
+				close(results)
 				return
 			}
 			start = time.Now()
@@ -118,7 +114,7 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 				continue
 			}
 
-			if distance < dp.distanceThreshold {
+			if distance >= dp.distanceThreshold {
 				results <- DiffResult{One: p.One, OneArea: imgCacheOne.Config.Height * imgCacheOne.Config.Width, Two: p.Two, TwoArea: imgCacheTwo.Config.Height * imgCacheTwo.Config.Width}
 			}
 
