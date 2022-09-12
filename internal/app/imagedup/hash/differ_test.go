@@ -25,20 +25,18 @@ func TestDiffer(t *testing.T) {
 	var results, errors = differ.Run(context.Background())
 	var done = make(chan struct{})
 	go func() {
-		var r = true
-		var e = true
 		var i int
-		for r && e {
+		for results != nil && errors != nil {
 			select {
 			case err, open := <-errors:
 				if !open {
-					e = false
+					errors = nil
 					continue
 				}
 				assert.NoError(t, err)
 			case diff, open := <-results:
 				if !open {
-					r = false
+					results = nil
 					continue
 				}
 				assert.Equal(t, "../testimages/iceland-small.jpg", diff.One)

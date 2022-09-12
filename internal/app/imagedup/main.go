@@ -34,17 +34,17 @@ func NewImageDup(promNamespace, hashCacheFile, deleteLogFile string, numWorkers,
 		return nil, err
 	}
 
-	id.Differ = hash.NewDiffer(numWorkers, distanceThreshold, id.images, id.Cache, id.deleteLogger, promNamespace)
+	id.Differ = hash.NewDiffer(numWorkers, distanceThreshold, id.images, id.Cache, promNamespace)
 
 	go id.stats.publishStats(id.Cache)
 
 	return id, nil
 }
 
-func (id *ImageDup) Run(ctx context.Context, files []string) chan error {
-	var errors = id.Differ.Run(ctx)
+func (id *ImageDup) Run(ctx context.Context, files []string) (chan hash.DiffResult, chan error) {
+	var results, errors = id.Differ.Run(ctx)
 	id.streamFiles(ctx, files)
-	return errors
+	return results, errors
 }
 
 func (id *ImageDup) Shutdown() error {
