@@ -2,6 +2,7 @@ package imagedup
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/kmulvey/path"
@@ -17,7 +18,8 @@ var expectedPairs = map[string]struct{}{
 func TestStreamFiles(t *testing.T) {
 	t.Parallel()
 
-	var id, err = NewImageDup("TestStreamFiles", "cacheFile.json", 2, 10)
+	var cacheFile = "TestStreamFiles"
+	var id, err = NewImageDup("TestStreamFiles", cacheFile, 2, 10)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
@@ -38,12 +40,15 @@ func TestStreamFiles(t *testing.T) {
 	id.streamFiles(context.Background(), fileNames)
 
 	<-done
+
+	assert.NoError(t, os.RemoveAll(cacheFile))
 }
 
 func TestStreamFilesCancel(t *testing.T) {
 	t.Parallel()
 
-	var id, err = NewImageDup("TestStreamFilesCancel", "cacheFile.json", 2, 10)
+	var cacheFile = "TestStreamFiles"
+	var id, err = NewImageDup("TestStreamFilesCancel", cacheFile, 2, 10)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
@@ -62,4 +67,5 @@ func TestStreamFilesCancel(t *testing.T) {
 	cancel()
 
 	<-done
+	assert.NoError(t, os.RemoveAll(cacheFile))
 }
