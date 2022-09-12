@@ -78,7 +78,7 @@ func main() {
 	}
 
 	// start er up
-	var id, err = imagedup.NewImageDup("imagedup", cacheFile, outputFile, threads, distanceThreshold)
+	var id, err = imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold)
 	handleErr("NewImageDup", err)
 
 	// list all the files

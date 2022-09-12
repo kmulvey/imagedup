@@ -3,7 +3,7 @@ package imagedup
 import (
 	"context"
 
-	"github.com/kmulvey/imagedup/pkg/types"
+	"github.com/kmulvey/imagedup/pkg/imagedup/types"
 )
 
 func (id *ImageDup) streamFiles(ctx context.Context, files []string) {

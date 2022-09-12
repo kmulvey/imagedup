@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/kmulvey/goutils"
-	"github.com/kmulvey/imagedup/pkg/types"
+	"github.com/kmulvey/imagedup/pkg/imagedup/types"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

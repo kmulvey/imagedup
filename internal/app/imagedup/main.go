@@ -4,20 +4,17 @@ import (
 	"context"
 
 	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
-	"github.com/kmulvey/imagedup/pkg/types"
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
+	"github.com/kmulvey/imagedup/pkg/imagedup/types"
 )
 
 type ImageDup struct {
 	*stats
 	*hash.Cache
-	deleteLogger *logrus.Logger
 	*hash.Differ
 	images chan types.Pair
 }
 
-func NewImageDup(promNamespace, hashCacheFile, deleteLogFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
+func NewImageDup(promNamespace, hashCacheFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
 	var id = new(ImageDup)
 	var err error
 
@@ -25,11 +22,6 @@ func NewImageDup(promNamespace, hashCacheFile, deleteLogFile string, numWorkers,
 	id.stats = newStats(promNamespace)
 
 	id.Cache, err = hash.NewCache(hashCacheFile, promNamespace)
-	if err != nil {
-		return nil, err
-	}
-
-	id.deleteLogger, err = newDeleteLogger(deleteLogFile)
 	if err != nil {
 		return nil, err
 	}
@@ -49,20 +41,4 @@ func (id *ImageDup) Run(ctx context.Context, files []string) (chan hash.DiffResu
 
 func (id *ImageDup) Shutdown() error {
 	return id.Cache.Persist()
-}
-
-func (id *ImageDup) CollectResults(results chan hash.DiffResult) {
-	for result := range results {
-		if result.OneArea > result.TwoArea {
-			id.deleteLogger.WithFields(log.Fields{
-				"big":   result.One,
-				"small": result.Two,
-			}).Info("delete")
-		} else {
-			id.deleteLogger.WithFields(log.Fields{
-				"big":   result.Two,
-				"small": result.One,
-			}).Info("delete")
-		}
-	}
 }
