@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/kmulvey/imagedup/internal/app/imagedup"
+	"github.com/kmulvey/imagedup/pkg/imagedup/logger"
 	"github.com/kmulvey/path"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -78,7 +79,9 @@ func main() {
 	}
 
 	// start er up
-	var id, err = imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold)
+	var resultsLogger, err = logger.NewDeleteLogger(outputFile)
+	handleErr("NewImageDup", err)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold)
 	handleErr("NewImageDup", err)
 
 	// list all the files
@@ -103,7 +106,7 @@ func main() {
 				results = nil
 				continue
 			}
-			log.Info(result)
+			logger.LogResult(resultsLogger, result)
 		case err, open := <-errors:
 			if !open {
 				errors = nil

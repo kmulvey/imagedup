@@ -60,3 +60,17 @@ func LogResults(resultsLogger *logrus.Logger, results chan hash.DiffResult) {
 		}
 	}
 }
+
+func LogResult(resultsLogger *logrus.Logger, result hash.DiffResult) {
+	if result.OneArea > result.TwoArea {
+		resultsLogger.WithFields(log.Fields{
+			"big":   result.One,
+			"small": result.Two,
+		}).Info("delete")
+	} else {
+		resultsLogger.WithFields(log.Fields{
+			"big":   result.Two,
+			"small": result.One,
+		}).Info("delete")
+	}
+}
