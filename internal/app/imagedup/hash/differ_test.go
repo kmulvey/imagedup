@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/kmulvey/imagedup/pkg/imagedup/types"
 	"github.com/stretchr/testify/assert"
@@ -24,9 +23,10 @@ func TestDiffer(t *testing.T) {
 
 	var results, errors = differ.Run(context.Background())
 	var done = make(chan struct{})
+
 	go func() {
 		var i int
-		for results != nil && errors != nil {
+		for results != nil || errors != nil {
 			select {
 			case err, open := <-errors:
 				if !open {
@@ -47,7 +47,6 @@ func TestDiffer(t *testing.T) {
 		assert.Equal(t, 1, i)
 		close(done)
 	}()
-	time.Sleep(time.Second) // wait for things to speed up, 1s is high for cheap ci/cd hw
 
 	inputImages <- types.Pair{One: "../testimages/iceland.jpg", Two: "../testimages/iceland.jpg"}
 	inputImages <- types.Pair{One: "../testimages/iceland-small.jpg", Two: "../testimages/iceland.jpg"}
