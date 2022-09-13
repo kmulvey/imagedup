@@ -35,7 +35,7 @@ func NewImageDup(promNamespace, hashCacheFile string, numWorkers, distanceThresh
 
 func (id *ImageDup) Run(ctx context.Context, files []string) (chan hash.DiffResult, chan error) {
 	var results, errors = id.Differ.Run(ctx)
-	id.streamFiles(ctx, files)
+	go id.streamFiles(ctx, files)
 	return results, errors
 }
 

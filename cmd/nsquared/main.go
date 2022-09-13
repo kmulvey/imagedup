@@ -87,32 +87,36 @@ func main() {
 	// list all the files
 	files, err := path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
-	files = path.OnlyDirs(files)
+	//files = path.OnlyDirs(files)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d dirs", len(files))
 
-	log.Info("Started, go to grafana to monitor")
 	var results, errors = id.Run(ctx, fileNames)
+
+	log.Info("Started, go to grafana to monitor")
 
 	// wait for all diff workers to finish or we get a shutdown signal
 	// whichever comes first
-	var graceful = true
-	for graceful && results != nil && errors != nil {
+CollectionLoop:
+	for results != nil || errors != nil {
 		select {
 		case <-gracefulShutdown:
-			graceful = false
-		case result, open := <-results:
-			if !open {
-				results = nil
-				continue
+			break CollectionLoop
+		default:
+			select {
+			case result, open := <-results:
+				if !open {
+					results = nil
+					continue
+				}
+				logger.LogResult(resultsLogger, result)
+			case err, open := <-errors:
+				if !open {
+					errors = nil
+					continue
+				}
+				log.Error(err)
 			}
-			logger.LogResult(resultsLogger, result)
-		case err, open := <-errors:
-			if !open {
-				errors = nil
-				continue
-			}
-			log.Error(err)
 		}
 	}
 
