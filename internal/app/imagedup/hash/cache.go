@@ -1,6 +1,7 @@
 package hash
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -29,10 +30,7 @@ type Image struct {
 
 // hashExportType is a stripped down type with just the necessary data which is intended to be
 // persisted to disk so we dont need to calculate the hash again.
-type hashExportType struct {
-	Hash uint64
-	Kind goimagehash.Kind
-}
+type hashExportType map[string]uint64
 
 // NewCache reads the given file to rebuild its map from the last time it was run.
 // If the file does not exist, it will be created.
@@ -67,14 +65,14 @@ func NewCache(file, promNamespace string) (*Cache, error) {
 	}
 
 	// load map to file
-	var m = make(map[string]hashExportType)
+	var m = make(hashExportType)
 	err = json.NewDecoder(f).Decode(&m)
 	if err != nil {
 		return nil, fmt.Errorf("HashCache error decoding json file: %s, err: %w", file, err)
 	}
 
 	for name, hash := range m {
-		hc.store[name] = &Image{goimagehash.NewImageHash(hash.Hash, hash.Kind), image.Config{}}
+		hc.store[name] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
 	}
 
 	err = f.Close()
@@ -86,11 +84,15 @@ func NewCache(file, promNamespace string) (*Cache, error) {
 }
 
 // NumImages returns the number of images in the cache
-func (h *Cache) NumImages() int {
+func (h *Cache) Stats() (int, int) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
-	return len(h.store)
+	// encoding to get the size of the store is a bit clunky but it only
+	// takes tens of millis for a len(store) of ~50k.
+	b := new(bytes.Buffer)
+	_ = json.NewEncoder(b).Encode(h.store) // dont care about errors, its just a stat
+	return len(h.store), b.Len()
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
@@ -155,9 +157,9 @@ func (h *Cache) Persist() error {
 
 	// dump map to file
 	h.lock.Lock()
-	var m = make(map[string]hashExportType)
+	var m = make(hashExportType)
 	for name, hash := range h.store {
-		m[name] = hashExportType{Hash: hash.GetHash(), Kind: hash.GetKind()}
+		m[name] = hash.GetHash()
 	}
 	h.lock.Unlock()
 

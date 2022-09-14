@@ -24,7 +24,8 @@ func TestCache(t *testing.T) {
 		_, err = cache.GetHash(file)
 		assert.NoError(t, err)
 	}
-	assert.Equal(t, 3, cache.NumImages())
+	var numImages, _ = cache.Stats()
+	assert.Equal(t, 3, numImages)
 
 	_, err = cache.GetHash(fileNames[0])
 	assert.NoError(t, err)
@@ -35,7 +36,8 @@ func TestCache(t *testing.T) {
 	// do it again
 	cache, err = NewCache(cacheFile, "TestCache2")
 	assert.NoError(t, err)
-	assert.Equal(t, 3, cache.NumImages())
+	numImages, _ = cache.Stats()
+	assert.Equal(t, 3, numImages)
 
 	err = os.RemoveAll(cacheFile)
 	assert.NoError(t, err)
