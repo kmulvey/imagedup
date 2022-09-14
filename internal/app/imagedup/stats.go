@@ -4,6 +4,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -12,9 +13,9 @@ type stats struct {
 	PairTotal           prometheus.Counter
 	GCTime              prometheus.Gauge
 	TotalComparisons    prometheus.Gauge
-	ImageCacheSize      prometheus.Gauge
+	ImageCacheBytes     prometheus.Gauge
 	ImageCacheNumImages prometheus.Gauge
-	PairCacheSize       prometheus.Gauge
+	FileMapBytes        prometheus.Gauge
 	PromNamespace       string
 }
 
@@ -22,6 +23,20 @@ func newStats(promNamespace string) *stats {
 	var s = new(stats)
 	s.PromNamespace = promNamespace
 
+	s.GCTime = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: promNamespace,
+			Name:      "gc_time_nano",
+			Help:      "how long a gc sweep took",
+		},
+	)
+	s.TotalComparisons = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: promNamespace,
+			Name:      "total_comparisons",
+			Help:      "how many comparisons need to be done",
+		},
+	)
 	s.PairTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -29,55 +44,50 @@ func newStats(promNamespace string) *stats {
 			Help:      "How many pairs we read.",
 		},
 	)
-	s.GCTime = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: promNamespace,
-			Name:      "gc_time_nano",
-		},
-	)
-	s.TotalComparisons = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: promNamespace,
-			Name:      "total_comparisons",
-		},
-	)
-	s.ImageCacheSize = prometheus.NewGauge(
+	s.ImageCacheBytes = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: promNamespace,
 			Name:      "image_cache_size_bytes",
+			Help:      "disk size of the cache",
 		},
 	)
 	s.ImageCacheNumImages = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: promNamespace,
 			Name:      "image_cache_num_images",
+			Help:      "how many images are in the cache",
 		},
 	)
-	s.PairCacheSize = prometheus.NewGauge(
+	s.FileMapBytes = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: promNamespace,
-			Name:      "pair_cache_size",
+			Name:      "file_map_bytes",
+			Help:      "size of the file dedup map",
 		},
 	)
 	prometheus.MustRegister(s.PairTotal)
 	prometheus.MustRegister(s.GCTime)
 	prometheus.MustRegister(s.TotalComparisons)
-	prometheus.MustRegister(s.ImageCacheSize)
+	prometheus.MustRegister(s.ImageCacheBytes)
 	prometheus.MustRegister(s.ImageCacheNumImages)
-	prometheus.MustRegister(s.PairCacheSize)
+	prometheus.MustRegister(s.FileMapBytes)
 
 	return s
 }
 
 // publishStats publishes go GC stats + cache size to prom every 10 seconds
-func (s *stats) publishStats(imageCache *hash.Cache) {
+func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
 
 		s.GCTime.Set(float64(stats.PauseTotalNs))
 
-		s.ImageCacheNumImages.Set(float64(imageCache.NumImages()))
+		var numImages, cacheBytes = imageCache.Stats()
+		s.ImageCacheNumImages.Set(float64(numImages))
+		s.ImageCacheBytes.Set(float64(cacheBytes))
+		var b, _ = fileMap.ToBytes()
+		s.FileMapBytes.Set(float64(len(b)))
 
 		time.Sleep(10 * time.Second)
 	}
