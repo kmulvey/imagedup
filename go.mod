@@ -3,6 +3,7 @@ module github.com/kmulvey/imagedup
 go 1.18
 
 require (
+	github.com/RoaringBitmap/roaring v1.2.1
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.3.1
 	github.com/kmulvey/path v0.6.0
@@ -13,11 +14,13 @@ require (
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
