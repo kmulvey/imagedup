@@ -81,15 +81,142 @@
             "type": "prometheus",
             "uid": "KOLQvdBnz"
           },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "(imagedup_comparisons_completed/imagedup_total_comparisons)*100",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
       "title": "Percent Complete",
       "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 29,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "code",
+          "expr": "(imagedup_total_comparisons-imagedup_comparisons_completed)/rate(imagedup_pair_total[5m])",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Time Remaining",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "exemplar": true,
+          "expr": "imagedup_image_cache_num_images",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Images in Cache",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -153,7 +280,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 8
       },
       "id": 14,
       "options": {
@@ -179,143 +306,17 @@
             "type": "prometheus",
             "uid": "KOLQvdBnz"
           },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "rate(imagedup_pair_total[5m])",
           "interval": "",
           "legendFormat": "Diff/s",
+          "range": true,
           "refId": "A"
         }
       ],
       "title": "Diff Rate",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "KOLQvdBnz"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "id": 10,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "9.1.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "KOLQvdBnz"
-          },
-          "exemplar": true,
-          "expr": "imagedup_image_cache_num_images",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Images in Cache",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "KOLQvdBnz"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "id": 23,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "9.1.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "KOLQvdBnz"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "imagedup_image_cache_size_bytes",
-          "interval": "",
-          "legendFormat": "",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Disk Size of Cache",
-      "type": "stat"
     },
     {
       "datasource": {
@@ -379,7 +380,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 16
       },
       "id": 18,
       "options": {
@@ -421,7 +422,7 @@
           "refId": "B"
         }
       ],
-      "title": "Image Cache Hits/Miss",
+      "title": "Image Cache Hits/Miss Rate",
       "type": "timeseries"
     },
     {
@@ -429,40 +430,11 @@
         "type": "prometheus",
         "uid": "KOLQvdBnz"
       },
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -471,14 +443,10 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
-          "unit": "ns"
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -486,26 +454,24 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 16
       },
-      "id": 4,
+      "id": 23,
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
           "calcs": [
-            "lastNotNull",
-            "min",
-            "max",
-            "mean"
+            "lastNotNull"
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "textMode": "auto"
       },
+      "pluginVersion": "9.1.5",
       "targets": [
         {
           "datasource": {
@@ -514,15 +480,15 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "imagedup_diff_time_nano",
+          "expr": "imagedup_image_cache_size_bytes",
           "interval": "",
-          "legendFormat": "Diff",
+          "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Diff Time",
-      "type": "timeseries"
+      "title": "Disk Size of Cache",
+      "type": "stat"
     },
     {
       "aliasColors": {},
@@ -545,7 +511,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 22,
@@ -714,7 +680,7 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "ns"
         },
         "overrides": []
       },
@@ -722,13 +688,16 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 24
       },
-      "id": 27,
+      "id": 4,
       "options": {
         "legend": {
           "calcs": [
-            "lastNotNull"
+            "lastNotNull",
+            "min",
+            "max",
+            "mean"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -745,14 +714,16 @@
             "type": "prometheus",
             "uid": "KOLQvdBnz"
           },
-          "editorMode": "builder",
-          "expr": "imagedup_file_map_bytes{job=\"imagedup\"}",
-          "legendFormat": "Size",
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "imagedup_diff_time_nano",
+          "interval": "",
+          "legendFormat": "Diff",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "File Dedup Map Size",
+      "title": "Diff Time",
       "type": "timeseries"
     },
     {
@@ -817,7 +788,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 32
       },
       "id": 25,
       "options": {
@@ -916,6 +887,101 @@
               }
             ]
           },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 27,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "expr": "imagedup_file_map_bytes{job=\"imagedup\"}",
+          "legendFormat": "Size",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "File Dedup Map Size",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
           "unit": "ns"
         },
         "overrides": []
@@ -924,7 +990,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 41
       },
       "id": 8,
       "options": {
@@ -1002,6 +1068,6 @@
   "timezone": "browser",
   "title": "Imagedup",
   "uid": "1ewoKQfnk",
-  "version": 31,
+  "version": 33,
   "weekStart": ""
 }
