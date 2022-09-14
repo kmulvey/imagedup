@@ -87,7 +87,6 @@ func main() {
 	// list all the files
 	files, err := path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
-	//files = path.OnlyDirs(files)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d dirs", len(files))
 
