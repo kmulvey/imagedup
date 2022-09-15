@@ -114,7 +114,7 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 				continue
 			}
 
-			if distance >= dp.distanceThreshold {
+			if distance <= dp.distanceThreshold {
 				results <- DiffResult{One: p.One, OneArea: imgCacheOne.Config.Height * imgCacheOne.Config.Width, Two: p.Two, TwoArea: imgCacheTwo.Config.Height * imgCacheTwo.Config.Width}
 			}
 

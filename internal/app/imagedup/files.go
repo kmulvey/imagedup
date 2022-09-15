@@ -20,9 +20,14 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 					close(id.images)
 					return
 				default:
-					if found := id.Bitmap.Contains(compress(i, j)); !found {
+					if id.dedupPairs {
+						if found := id.Bitmap.Contains(compress(i, j)); !found {
+							id.images <- types.Pair{One: one, Two: two, I: i, J: j}
+							id.Bitmap.Add(compress(j, i))
+							id.stats.PairTotal.Inc()
+						}
+					} else {
 						id.images <- types.Pair{One: one, Two: two, I: i, J: j}
-						id.Bitmap.Add(compress(j, i))
 						id.stats.PairTotal.Inc()
 					}
 				}

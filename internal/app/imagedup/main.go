@@ -13,16 +13,18 @@ type ImageDup struct {
 	*hash.Cache
 	*hash.Differ
 	*roaring64.Bitmap
-	images chan types.Pair
+	images     chan types.Pair
+	dedupPairs bool
 }
 
-func NewImageDup(promNamespace, hashCacheFile string, numWorkers, distanceThreshold int) (*ImageDup, error) {
+func NewImageDup(promNamespace, hashCacheFile string, numWorkers, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
 	var id = new(ImageDup)
 	var err error
 
 	id.images = make(chan types.Pair)
 	id.stats = newStats(promNamespace)
 	id.Bitmap = roaring64.New()
+	id.dedupPairs = dedupPairs
 
 	id.Cache, err = hash.NewCache(hashCacheFile, promNamespace)
 	if err != nil {
