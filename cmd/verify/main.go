@@ -19,10 +19,12 @@ type pair struct {
 
 func main() {
 	var alwaysDelete bool
+	var deleteFile string
 	flag.BoolVar(&alwaysDelete, "always-delete", false, "just take the larger one, always")
+	flag.StringVar(&deleteFile, "delete-file", "delete.log", "log file where duplicate pairs are stored, same file from -cache-file when running nsquared")
 	flag.Parse()
 
-	var file, err = os.Open("delete.log")
+	var file, err = os.Open(deleteFile)
 	if err != nil {
 		log.Fatal(err)
 	}
