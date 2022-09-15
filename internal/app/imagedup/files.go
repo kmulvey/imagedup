@@ -9,7 +9,11 @@ import (
 
 func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 	var numImages = float64(len(files))
-	id.stats.TotalComparisons.Set((math.Pow(numImages, 2) - numImages) / 2)
+	if id.dedupPairs {
+		id.stats.TotalComparisons.Set((math.Pow(numImages, 2) - numImages) / 2)
+	} else {
+		id.stats.TotalComparisons.Set((math.Pow(numImages, 2) - numImages))
+	}
 
 	for i, one := range files {
 		for j, two := range files {
