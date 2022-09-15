@@ -28,7 +28,7 @@ jobs:
           args: --timeout=5m
 
       - name: Govulncheck
-        uses: kmulvey/govulncheck-action@main
+        uses: kmulvey/govulncheck-action@v1.0.0
 
       - name: Build & Test
         run: |
