@@ -19,7 +19,7 @@ func TestStreamFiles(t *testing.T) {
 	t.Parallel()
 
 	var cacheFile = "TestStreamFiles"
-	var id, err = NewImageDup("TestStreamFiles", cacheFile, 2, 10)
+	var id, err = NewImageDup("TestStreamFiles", cacheFile, 2, 10, true)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
@@ -48,7 +48,7 @@ func TestStreamFilesCancel(t *testing.T) {
 	t.Parallel()
 
 	var cacheFile = "TestStreamFiles"
-	var id, err = NewImageDup("TestStreamFilesCancel", cacheFile, 2, 10)
+	var id, err = NewImageDup("TestStreamFilesCancel", cacheFile, 2, 10, true)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
