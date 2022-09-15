@@ -5,11 +5,11 @@ Got a lot of images with many duplicates? Maybe of different sizes? `imagedup` u
 
 ## Run
 ```
-./imagedup -threads=2 -distance=10 -dir=/path/to/images
+./nsquared -cache-file cache.json -output-file delete.log -dir /path/to/images -threads 5 -dedup-file-pairs true
 
 # this will create delete.log which will be used by the verify tool.
 
-./verify
+./verify -delete-file delete.log
 ```
 
 print help:
