@@ -19,6 +19,8 @@ import (
 	"github.com/kmulvey/path"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"go.szostok.io/version"
+	"go.szostok.io/version/printer"
 )
 
 func main() {
@@ -53,6 +55,7 @@ func main() {
 	var distanceThreshold int
 	var dedupFilePairs bool
 	var help bool
+	var v bool
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
 	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes")
 	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
@@ -61,10 +64,20 @@ func main() {
 	flag.BoolVar(&dedupFilePairs, "dedup-file-pairs", false, "dedup file pairs e.g. if a&b have been compared then dont comprare b&a as it will have the same result. doing this will reduce the time to diff but will also require more memory.")
 	flag.BoolVar(&help, "h", false, "print help")
 	flag.BoolVar(&help, "help", false, "print help")
+	flag.BoolVar(&v, "version", false, "print version")
+	flag.BoolVar(&v, "v", false, "print version")
 	flag.Parse()
 
 	if help {
 		flag.PrintDefaults()
+		os.Exit(0)
+	}
+	if v {
+		var verPrinter = printer.New()
+		var info = version.Get()
+		if err := verPrinter.PrintInfo(os.Stdout, info); err != nil {
+			log.Fatal(err)
+		}
 		os.Exit(0)
 	}
 	if strings.TrimSpace(rootDir) == "" {
