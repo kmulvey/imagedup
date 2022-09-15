@@ -83,7 +83,7 @@ func main() {
 	// start er up
 	var resultsLogger, err = logger.NewDeleteLogger(outputFile)
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	// list all the files

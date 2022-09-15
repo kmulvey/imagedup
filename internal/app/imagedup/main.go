@@ -2,6 +2,7 @@ package imagedup
 
 import (
 	"context"
+	"sync"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
@@ -13,6 +14,7 @@ type ImageDup struct {
 	*hash.Cache
 	*hash.Differ
 	*roaring64.Bitmap
+	bitmapLock sync.RWMutex
 	images     chan types.Pair
 	dedupPairs bool
 }
@@ -33,7 +35,7 @@ func NewImageDup(promNamespace, hashCacheFile string, numWorkers, distanceThresh
 
 	id.Differ = hash.NewDiffer(numWorkers, distanceThreshold, id.images, id.Cache, promNamespace)
 
-	go id.stats.publishStats(id.Cache, id.Bitmap)
+	go id.stats.publishStats(id.Cache, id.Bitmap, dedupPairs, &id.bitmapLock)
 
 	return id, nil
 }

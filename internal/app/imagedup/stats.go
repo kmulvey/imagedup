@@ -2,6 +2,7 @@ package imagedup
 
 import (
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
@@ -76,7 +77,7 @@ func newStats(promNamespace string) *stats {
 }
 
 // publishStats publishes go GC stats + cache size to prom every 10 seconds
-func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap) {
+func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap, dedupPairs bool, bitmapLock *sync.RWMutex) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
@@ -86,8 +87,13 @@ func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap) 
 		var numImages, cacheBytes = imageCache.Stats()
 		s.ImageCacheNumImages.Set(float64(numImages))
 		s.ImageCacheBytes.Set(float64(cacheBytes))
-		var b, _ = fileMap.ToBytes()
-		s.FileMapBytes.Set(float64(len(b)))
+
+		if dedupPairs {
+			bitmapLock.Lock()
+			var b, _ = fileMap.ToBytes()
+			s.FileMapBytes.Set(float64(len(b)))
+			bitmapLock.Unlock()
+		}
 
 		time.Sleep(10 * time.Second)
 	}
