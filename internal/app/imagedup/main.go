@@ -14,9 +14,9 @@ type ImageDup struct {
 	*hash.Cache
 	*hash.Differ
 	*roaring64.Bitmap
-	bitmapLock sync.RWMutex
 	images     chan types.Pair
 	dedupPairs bool
+	bitmapLock sync.RWMutex
 }
 
 func NewImageDup(promNamespace, hashCacheFile string, numWorkers, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
