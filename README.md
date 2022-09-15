@@ -15,3 +15,25 @@ Got a lot of images with many duplicates? Maybe of different sizes? `imagedup` u
 print help:
 
 `imagedup -h`
+
+## Deduping pairs of images
+Deduping is done with a roaring bitmap which will reduce the number of comparisons by about half but will increase memory usage. This is a tradeoff you will need to consider. This feature is disabled by default and can be changed by passing `-dedup-file-pairs true`.
+
+### Without deduping the pairs
+```
+INFO[2022-09-15 11:29:32] Found 31722 dirs                             
+INFO[2022-09-15 11:29:32] Started, go to grafana to monitor            
+INFO[2022-09-15 11:51:34] Shutting down                                
+INFO[2022-09-15 11:51:34] Total time taken: 22m2.221316446s   
+```
+
+### Deduping the pairs
+```
+INFO[2022-09-15 11:56:28] Found 31722 dirs                             
+INFO[2022-09-15 11:56:28] Started, go to grafana to monitor            
+INFO[2022-09-15 12:13:52] Shutting down                                
+INFO[2022-09-15 12:13:52] Total time taken: 17m24.991176074s 
+```
+### Compare Stats
+![grafana screenshot](grafana/dedup-vs-not.png "grafana screenshot")
+
