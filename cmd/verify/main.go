@@ -29,7 +29,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for _, p := range dedupFile(file) {
+	var dedupedFiles = dedupFile(file)
+	for i, p := range dedupedFiles {
 
 		// we could has already deleted one of them, so just go around
 		if !fileExists(p.Small) {
@@ -76,7 +77,7 @@ func main() {
 
 		// ask the user if we should delete
 		var del string
-		fmt.Print("delete ", p.Small, " ? ")
+		fmt.Printf("[%d/%d]	delete: %s ?", i, len(dedupedFiles), p.Small)
 		fmt.Scanln(&del)
 		if del == "y" {
 			err = os.Remove(p.Small)
