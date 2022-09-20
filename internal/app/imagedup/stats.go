@@ -13,6 +13,7 @@ import (
 type stats struct {
 	PairTotal           prometheus.Counter
 	GCTime              prometheus.Gauge
+	TotalFiles          prometheus.Gauge
 	TotalComparisons    prometheus.Gauge
 	ImageCacheBytes     prometheus.Gauge
 	ImageCacheNumImages prometheus.Gauge
@@ -36,6 +37,13 @@ func newStats(promNamespace string) *stats {
 			Namespace: promNamespace,
 			Name:      "total_comparisons",
 			Help:      "how many comparisons need to be done",
+		},
+	)
+	s.TotalFiles = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: promNamespace,
+			Name:      "total_files",
+			Help:      "how many files we were give to compare",
 		},
 	)
 	s.PairTotal = prometheus.NewCounter(
@@ -69,6 +77,7 @@ func newStats(promNamespace string) *stats {
 	prometheus.MustRegister(s.PairTotal)
 	prometheus.MustRegister(s.GCTime)
 	prometheus.MustRegister(s.TotalComparisons)
+	prometheus.MustRegister(s.TotalFiles)
 	prometheus.MustRegister(s.ImageCacheBytes)
 	prometheus.MustRegister(s.ImageCacheNumImages)
 	prometheus.MustRegister(s.FileMapBytes)
