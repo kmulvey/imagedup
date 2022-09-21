@@ -100,7 +100,7 @@ func main() {
 
 			// ask the user if we should delete
 			var del string
-			fmt.Printf("[%d/%d]	delete: %s ?", i, len(dedupedFiles), p.Small)
+			fmt.Printf("[%d/%d]	delete: %s ?", i+1, len(dedupedFiles), p.Small)
 			fmt.Scanln(&del)
 			if del == "y" {
 				err = os.Remove(p.Small)
