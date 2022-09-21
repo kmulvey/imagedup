@@ -18,6 +18,21 @@ builds:
       - linux
       - windows
       - darwin
+
+  - id: uniqdirs
+    main: ./cmd/uniqdirs/main.go
+    binary: uniqdirs
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X go.szostok.io/version.version={{.Version}}
+      - -X go.szostok.io/version.buildDate={{.Date}}
+    goos:
+      - linux
+      - windows
+      - darwin
+
   - id: verify
     main: ./cmd/verify/main.go
     binary: verify
@@ -31,6 +46,7 @@ builds:
       - linux
       - windows
       - darwin
+
 archives:
   - replacements:
       darwin: Darwin
