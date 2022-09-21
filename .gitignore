@@ -15,4 +15,7 @@
 # vendor/
 cmd/verify/verify
 cmd/nsquared/nsquared
+cmd/nsquared/cache.json
+cmd/uniqdirs/cache.json
+cmd/uniqdirs/uniqdirs
 dist/
