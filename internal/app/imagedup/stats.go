@@ -107,3 +107,13 @@ func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap, 
 		time.Sleep(10 * time.Second)
 	}
 }
+
+func (s *stats) unregister() {
+	prometheus.Unregister(s.PairTotal)
+	prometheus.Unregister(s.GCTime)
+	prometheus.Unregister(s.TotalComparisons)
+	prometheus.Unregister(s.TotalFiles)
+	prometheus.Unregister(s.ImageCacheBytes)
+	prometheus.Unregister(s.ImageCacheNumImages)
+	prometheus.Unregister(s.FileMapBytes)
+}

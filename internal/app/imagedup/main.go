@@ -47,5 +47,7 @@ func (id *ImageDup) Run(ctx context.Context, files []string) (chan hash.DiffResu
 }
 
 func (id *ImageDup) Shutdown() error {
+	id.stats.unregister()
+	id.Differ.Shutdown()
 	return id.Cache.Persist()
 }

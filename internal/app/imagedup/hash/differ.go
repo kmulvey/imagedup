@@ -58,6 +58,11 @@ func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, c
 	return dp
 }
 
+func (dp *Differ) Shutdown() {
+	prometheus.Unregister(dp.diffTime)
+	prometheus.Unregister(dp.comparisonsCompleted)
+}
+
 func (dp *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
 	var errorChans = make([]chan error, dp.numWorkers)
 	var resultChans = make([]chan DiffResult, dp.numWorkers)

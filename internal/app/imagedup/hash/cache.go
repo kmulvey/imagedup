@@ -172,5 +172,8 @@ func (h *Cache) Persist() error {
 		return fmt.Errorf("HashCache error closing file: %s, err: %w", h.storeFileName, err)
 	}
 
+	prometheus.Unregister(h.imageCacheHits)
+	prometheus.Unregister(h.imageCacheMisses)
+
 	return nil
 }
