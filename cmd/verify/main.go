@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/kmulvey/path"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,72 +20,74 @@ type pair struct {
 
 func main() {
 	var alwaysDelete bool
-	var deleteFile string
+	var deleteFiles path.Path
 	flag.BoolVar(&alwaysDelete, "always-delete", false, "just take the larger one, always")
-	flag.StringVar(&deleteFile, "delete-file", "delete.log", "log file where duplicate pairs are stored, same file from -cache-file when running nsquared")
+	flag.Var(&deleteFiles, "delete-files", "log file where duplicate pairs are stored, same file from -cache-file when running nsquared")
 	flag.Parse()
 
-	var file, err = os.Open(deleteFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var dedupedFiles = dedupFile(file)
-	for i, p := range dedupedFiles {
-
-		// we could has already deleted one of them, so just go around
-		if !fileExists(p.Small) {
-			fmt.Println(p.Small, " already deleted")
-			continue
-		}
-		if !fileExists(p.Big) {
-			fmt.Println(p.Big, " already deleted")
-			continue
-		}
-
-		if alwaysDelete {
-			err = os.Remove(p.Small)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println("deleted", p.Small)
-			continue
-		}
-
-		var viewerCmd string
-		var goos = runtime.GOOS
-		switch goos {
-		case "windows":
-		case "darwin":
-			viewerCmd = "preview"
-		case "linux":
-			viewerCmd = "eog" // eog -- GNOME Image Viewer 41.1
-		default:
-			log.Fatalf("unsupported os: %s", goos)
-		}
-		// open both images with image viewer
-		cmd := exec.Command(viewerCmd, p.Big)
-		err = cmd.Start()
+	for _, deleteFile := range deleteFiles.Files {
+		var file, err = os.Open(deleteFile.AbsolutePath)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		cmdS := exec.Command(viewerCmd, p.Small)
-		err = cmdS.Run()
-		if err != nil {
-			log.Fatal(err)
-		}
+		var dedupedFiles = dedupFile(file)
+		for i, p := range dedupedFiles {
 
-		// ask the user if we should delete
-		var del string
-		fmt.Printf("[%d/%d]	delete: %s ?", i, len(dedupedFiles), p.Small)
-		fmt.Scanln(&del)
-		if del == "y" {
-			err = os.Remove(p.Small)
+			// we could has already deleted one of them, so just go around
+			if !fileExists(p.Small) {
+				fmt.Println(p.Small, " already deleted")
+				continue
+			}
+			if !fileExists(p.Big) {
+				fmt.Println(p.Big, " already deleted")
+				continue
+			}
+
+			if alwaysDelete {
+				err = os.Remove(p.Small)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println("deleted", p.Small)
+				continue
+			}
+
+			var viewerCmd string
+			var goos = runtime.GOOS
+			switch goos {
+			case "windows":
+			case "darwin":
+				viewerCmd = "preview"
+			case "linux":
+				viewerCmd = "eog" // eog -- GNOME Image Viewer 41.1
+			default:
+				log.Fatalf("unsupported os: %s", goos)
+			}
+			// open both images with image viewer
+			cmd := exec.Command(viewerCmd, p.Big)
+			err = cmd.Start()
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("deleted", p.Small)
+
+			cmdS := exec.Command(viewerCmd, p.Small)
+			err = cmdS.Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// ask the user if we should delete
+			var del string
+			fmt.Printf("[%d/%d]	delete: %s ?", i, len(dedupedFiles), p.Small)
+			fmt.Scanln(&del)
+			if del == "y" {
+				err = os.Remove(p.Small)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println("deleted", p.Small)
+			}
 		}
 	}
 }
