@@ -11,6 +11,8 @@ import (
 
 	"github.com/kmulvey/path"
 	log "github.com/sirupsen/logrus"
+	"go.szostok.io/version"
+	"go.szostok.io/version/printer"
 )
 
 type pair struct {
@@ -21,9 +23,28 @@ type pair struct {
 func main() {
 	var alwaysDelete bool
 	var deleteFiles path.Path
+	var v bool
+	var help bool
 	flag.BoolVar(&alwaysDelete, "always-delete", false, "just take the larger one, always")
 	flag.Var(&deleteFiles, "delete-files", "log file where duplicate pairs are stored, same file from -cache-file when running nsquared")
+	flag.BoolVar(&help, "h", false, "print help")
+	flag.BoolVar(&help, "help", false, "print help")
+	flag.BoolVar(&v, "version", false, "print version")
+	flag.BoolVar(&v, "v", false, "print version")
 	flag.Parse()
+
+	if help {
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+	if v {
+		var verPrinter = printer.New()
+		var info = version.Get()
+		if err := verPrinter.PrintInfo(os.Stdout, info); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}
 
 	for _, deleteFile := range deleteFiles.Files {
 		var file, err = os.Open(deleteFile.AbsolutePath)
