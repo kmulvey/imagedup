@@ -14,8 +14,12 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 cmd/verify/verify
+cmd/verify/delete.log
 cmd/nsquared/nsquared
 cmd/nsquared/cache.json
+cmd/nsquared/delete.log
 cmd/uniqdirs/cache.json
+cmd/uniqdirs/*.log
 cmd/uniqdirs/uniqdirs
+
 dist/
