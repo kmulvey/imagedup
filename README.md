@@ -5,9 +5,9 @@ Got a lot of images with many duplicates? Maybe of different sizes? `imagedup` u
 
 ## Run
 ```
-./nsquared -cache-file cache.json -output-file delete.log -dir /path/to/images -threads 5 -dedup-file-pairs true
+./nsquared -cache-file cache.json -output-file delete.log -dir /path/to/images -threads 5 -dedup-file-pairs 
 # OR
-./uniqdirs -cache-file cache.json -output-file delete.log -dir /path/to/images -threads 5 -dedup-file-pairs true
+./uniqdirs -cache-file cache.json -output-file delete.log -dir /path/to/images -threads 5 -dedup-file-pairs
 
 # this will create delete.log which will be used by the verify tool.
 
@@ -19,7 +19,7 @@ print help:
 `imagedup -h`
 
 ## Deduping pairs of images
-Deduping is done with a roaring bitmap which will reduce the number of comparisons by about half but will increase memory usage. This is a tradeoff you will need to consider. This feature is disabled by default and can be changed by passing `-dedup-file-pairs true`.
+Deduping is done with a roaring bitmap which will reduce the number of comparisons by half but will increase memory usage. This is a tradeoff you will need to consider. This feature is disabled by default and can be changed by passing `-dedup-file-pairs`.
 
 ### Without deduping the pairs
 ```
