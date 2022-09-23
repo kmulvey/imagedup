@@ -491,74 +491,93 @@
       "type": "stat"
     },
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
       "datasource": {
         "type": "prometheus",
         "uid": "KOLQvdBnz"
       },
       "fieldConfig": {
         "defaults": {
-          "links": []
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
         },
         "overrides": []
       },
-      "fill": 1,
-      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 24
       },
-      "hiddenSeries": false,
       "id": 22,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": true,
-        "show": true,
-        "sort": "current",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
       "links": [],
-      "nullPointMode": "null",
       "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "9.1.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "KOLQvdBnz"
-          },
-          "editorMode": "builder",
-          "exemplar": true,
-          "expr": "go_memstats_sys_bytes{job=\"imagedup\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "Sys",
-          "range": true,
-          "refId": "A"
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "min",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.1.5",
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
@@ -567,7 +586,7 @@
           "editorMode": "builder",
           "expr": "process_resident_memory_bytes{job=\"imagedup\"}",
           "hide": false,
-          "legendFormat": "RSS",
+          "legendFormat": "RSS - Memory of this process",
           "range": true,
           "refId": "B"
         },
@@ -577,54 +596,15 @@
             "uid": "KOLQvdBnz"
           },
           "editorMode": "builder",
-          "expr": "go_memstats_heap_sys_bytes{job=\"imagedup\"}",
+          "expr": "rate(go_memstats_alloc_bytes_total{job=\"imagedup\"}[1m])",
           "hide": false,
-          "legendFormat": "Heap OS",
+          "legendFormat": "Alloc bytes/s",
           "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "KOLQvdBnz"
-          },
-          "editorMode": "builder",
-          "expr": "go_memstats_heap_inuse_bytes{job=\"imagedup\"}",
-          "hide": false,
-          "legendFormat": "Heap in use",
-          "range": true,
-          "refId": "D"
+          "refId": "F"
         }
       ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Memory",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "decbytes",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
+      "title": "Memory Overview",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -766,6 +746,7 @@
               "mode": "off"
             }
           },
+          "links": [],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -780,31 +761,38 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "decbytes"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 0,
         "y": 32
       },
-      "id": 25,
+      "id": 31,
+      "links": [],
       "options": {
         "legend": {
           "calcs": [
+            "mean",
+            "max",
+            "min",
             "lastNotNull"
           ],
           "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "9.1.5",
       "targets": [
         {
           "datasource": {
@@ -812,10 +800,11 @@
             "uid": "KOLQvdBnz"
           },
           "editorMode": "builder",
-          "expr": "go_goroutines{job=\"imagedup\"}",
-          "legendFormat": "Goroutines",
+          "expr": "go_memstats_heap_inuse_bytes{job=\"imagedup\"}",
+          "hide": false,
+          "legendFormat": "Heap in use",
           "range": true,
-          "refId": "A"
+          "refId": "D"
         },
         {
           "datasource": {
@@ -823,14 +812,14 @@
             "uid": "KOLQvdBnz"
           },
           "editorMode": "builder",
-          "expr": "go_threads{job=\"imagedup\"}",
+          "expr": "go_memstats_stack_inuse_bytes{job=\"imagedup\"}",
           "hide": false,
-          "legendFormat": "Threads",
+          "legendFormat": "Stack in use",
           "range": true,
-          "refId": "B"
+          "refId": "C"
         }
       ],
-      "title": "GoRoutines",
+      "title": "Heap vs Stack",
       "type": "timeseries"
     },
     {
@@ -892,7 +881,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 12,
         "y": 32
@@ -968,6 +957,122 @@
               "mode": "off"
             }
           },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 30,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "min",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "expr": "rate(go_memstats_mallocs_total{job=\"imagedup\"}[1m])",
+          "hide": false,
+          "legendFormat": "Heap objects allocated/s",
+          "range": true,
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "expr": "rate(go_memstats_frees_total{job=\"imagedup\"}[1m])",
+          "hide": false,
+          "legendFormat": "Heap objects freed/s",
+          "range": true,
+          "refId": "H"
+        }
+      ],
+      "title": "Heap Alloc / Free Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -987,10 +1092,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 41
+        "y": 40
       },
       "id": 8,
       "options": {
@@ -1015,15 +1120,274 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "imagedup_gc_time_nano",
+          "expr": "rate(imagedup_gc_time_nano[1m])",
           "interval": "",
-          "legendFormat": "Seconds",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "GC Time",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "id": 25,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "expr": "go_goroutines{job=\"imagedup\"}",
+          "legendFormat": "Goroutines",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "expr": "go_threads{job=\"imagedup\"}",
+          "hide": false,
+          "legendFormat": "Threads",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "GoRoutines",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "id": 33,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "9.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "go_gc_duration_seconds{job=\"imagedup\"}",
+          "format": "heatmap",
+          "instant": false,
+          "legendFormat": "{{quantile}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GC Timing Histogram",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "KOLQvdBnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "id": 35,
+      "options": {
+        "calculate": true,
+        "calculation": {
+          "xBuckets": {
+            "mode": "size"
+          }
+        },
+        "cellGap": 1,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Rainbow",
+          "steps": 32
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "show": true,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "s"
+        }
+      },
+      "pluginVersion": "9.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "editorMode": "builder",
+          "expr": "go_gc_duration_seconds{job=\"imagedup\"}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GC Histogram over time",
+      "type": "heatmap"
     }
   ],
   "refresh": "10s",
@@ -1068,6 +1432,8 @@
   "timezone": "browser",
   "title": "Imagedup",
   "uid": "1ewoKQfnk",
-  "version": 33,
+  "version": 39,
   "weekStart": ""
 }
+
+
