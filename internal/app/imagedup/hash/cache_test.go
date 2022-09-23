@@ -13,7 +13,7 @@ func TestCache(t *testing.T) {
 
 	var cacheFile = "testcache.json"
 
-	var cache, err = NewCache(cacheFile, "TestCache")
+	var cache, err = NewCache(cacheFile, "TestCache", 3)
 	assert.NoError(t, err)
 
 	files, err := path.ListFiles("../testimages")
@@ -34,7 +34,7 @@ func TestCache(t *testing.T) {
 	assert.NoError(t, err)
 
 	// do it again
-	cache, err = NewCache(cacheFile, "TestCache2")
+	cache, err = NewCache(cacheFile, "TestCache2", 3)
 	assert.NoError(t, err)
 	numImages, _ = cache.Stats()
 	assert.Equal(t, 3, numImages)

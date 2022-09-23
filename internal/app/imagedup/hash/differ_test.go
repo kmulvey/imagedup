@@ -16,7 +16,7 @@ func TestDiffer(t *testing.T) {
 	var cacheFile = "testdiffer.json"
 	var inputImages = make(chan types.Pair)
 
-	var cache, err = NewCache(cacheFile, "testdiffer")
+	var cache, err = NewCache(cacheFile, "testdiffer", 3)
 	assert.NoError(t, err)
 
 	var differ = NewDiffer(2, 10, inputImages, cache, "testdiffer")
