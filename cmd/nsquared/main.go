@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -26,6 +27,10 @@ import (
 func main() {
 	var start = time.Now()
 	var ctx, cancel = context.WithCancel(context.Background())
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -93,17 +98,17 @@ func main() {
 		log.Fatal("output file must have extension .log")
 	}
 
-	// start er up
-	var resultsLogger, err = logger.NewDeleteLogger(outputFile)
-	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold, dedupFilePairs)
-	handleErr("NewImageDup", err)
-
 	// list all the files
-	files, err := path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
+	var files, err = path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
-	log.Infof("Found %d dirs", len(files))
+	log.Infof("Found %d files", len(files))
+
+	// start er up
+	resultsLogger, err := logger.NewDeleteLogger(outputFile)
+	handleErr("NewImageDup", err)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, len(files), distanceThreshold, dedupFilePairs)
+	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)
 

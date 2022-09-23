@@ -123,17 +123,17 @@ func handleErr(prefix string, err error) {
 }
 
 func dedupDir(ctx context.Context, cancel context.CancelFunc, dir, cacheFile string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) {
-	// start er up
-	var resultsLogger, err = logger.NewDeleteLogger(filepath.Base(dir) + ".log")
-	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, distanceThreshold, dedupFilePairs)
-	handleErr("NewImageDup", err)
-
 	// list all the files
-	files, err := path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
+	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
+	// start er up
+
+	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + ".log")
+	handleErr("NewImageDup", err)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, len(files), distanceThreshold, dedupFilePairs)
+	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)
 

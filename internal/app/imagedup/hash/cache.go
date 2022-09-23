@@ -1,7 +1,6 @@
 package hash
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -34,9 +33,9 @@ type hashExportType map[string]uint64
 
 // NewCache reads the given file to rebuild its map from the last time it was run.
 // If the file does not exist, it will be created.
-func NewCache(file, promNamespace string) (*Cache, error) {
+func NewCache(file, promNamespace string, numFiles int) (*Cache, error) {
 	var hc = new(Cache)
-	hc.store = make(map[string]*Image)
+	hc.store = make(map[string]*Image, numFiles)
 	hc.storeFileName = file
 	hc.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -88,11 +87,8 @@ func (h *Cache) Stats() (int, int) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
-	// encoding to get the size of the store is a bit clunky but it only
-	// takes tens of millis for a len(store) of ~50k.
-	b := new(bytes.Buffer)
-	_ = json.NewEncoder(b).Encode(h.store) // dont care about errors, its just a stat
-	return len(h.store), b.Len()
+	var length = len(h.store)
+	return length, length * 48
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
