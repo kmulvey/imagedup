@@ -26,12 +26,13 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 				default:
 					if id.dedupPairs {
 						id.bitmapLock.Lock()
-						var key = compress(i, j)
-						if found := id.Bitmap.Contains(key); !found {
+
+						if found := id.Bitmap.Contains(compress(i, j)); !found {
 							id.images <- types.Pair{One: one, Two: two, I: i, J: j}
-							id.Bitmap.Add(key)
+							id.Bitmap.Add(compress(j, i)) // we set the opposite pair so we skip it next time
 							id.stats.PairTotal.Inc()
 						}
+
 						id.bitmapLock.Unlock()
 					} else {
 						id.images <- types.Pair{One: one, Two: two, I: i, J: j}
