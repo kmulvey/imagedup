@@ -160,11 +160,40 @@
         "type": "prometheus",
         "uid": "KOLQvdBnz"
       },
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -173,6 +202,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           },
@@ -186,22 +219,21 @@
         "x": 0,
         "y": 8
       },
-      "id": 10,
+      "id": 18,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
+        "legend": {
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "",
-          "values": false
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "textMode": "auto"
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
-      "pluginVersion": "9.1.5",
       "targets": [
         {
           "datasource": {
@@ -209,14 +241,26 @@
             "uid": "KOLQvdBnz"
           },
           "exemplar": true,
-          "expr": "imagedup_image_cache_num_images",
+          "expr": "rate(imagedup_image_hash_cache_hits[5m])",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Hits",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "KOLQvdBnz"
+          },
+          "exemplar": true,
+          "expr": "rate(imagedup_image_hash_cache_misses[5m])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Misses",
+          "refId": "B"
         }
       ],
-      "title": "Images in Cache",
-      "type": "stat"
+      "title": "Image Cache Hits/Miss Rate",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -323,40 +367,11 @@
         "type": "prometheus",
         "uid": "KOLQvdBnz"
       },
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -365,10 +380,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
@@ -382,21 +393,22 @@
         "x": 0,
         "y": 16
       },
-      "id": 18,
+      "id": 10,
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "textMode": "auto"
       },
+      "pluginVersion": "9.1.5",
       "targets": [
         {
           "datasource": {
@@ -404,26 +416,14 @@
             "uid": "KOLQvdBnz"
           },
           "exemplar": true,
-          "expr": "rate(imagedup_image_hash_cache_hits[5m])",
+          "expr": "imagedup_image_cache_num_images",
           "interval": "",
-          "legendFormat": "Hits",
+          "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "KOLQvdBnz"
-          },
-          "exemplar": true,
-          "expr": "rate(imagedup_image_hash_cache_misses[5m])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Misses",
-          "refId": "B"
         }
       ],
-      "title": "Image Cache Hits/Miss Rate",
-      "type": "timeseries"
+      "title": "Images in Cache",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1122,7 +1122,7 @@
           "exemplar": true,
           "expr": "rate(imagedup_gc_time_nano[1m])",
           "interval": "",
-          "legendFormat": "__auto",
+          "legendFormat": "Duration",
           "range": true,
           "refId": "A"
         }
@@ -1354,7 +1354,7 @@
           "color": "rgba(255,0,255,0.7)"
         },
         "filterValues": {
-          "le": 1e-9
+          "le": 1E-9
         },
         "legend": {
           "show": true
@@ -1425,15 +1425,13 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Imagedup",
   "uid": "1ewoKQfnk",
-  "version": 39,
+  "version": 41,
   "weekStart": ""
 }
-
-
