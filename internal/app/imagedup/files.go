@@ -31,7 +31,9 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 							id.images <- types.Pair{One: one, Two: two, I: i, J: j}
 							id.Bitmap.Add(compress(j, i)) // we set the opposite pair so we skip it next time
 							id.stats.PairTotal.Inc()
+							id.stats.FileMapMisses.Inc()
 						}
+						id.stats.FileMapHits.Inc()
 
 						id.bitmapLock.Unlock()
 					} else {

@@ -19,6 +19,8 @@ type stats struct {
 	ImageCacheNumImages prometheus.Gauge
 	FileMapBytes        prometheus.Gauge
 	FileMapEntries      prometheus.Gauge
+	FileMapHits         prometheus.Counter
+	FileMapMisses       prometheus.Counter
 	PromNamespace       string
 }
 
@@ -82,6 +84,20 @@ func newStats(promNamespace string) *stats {
 			Help:      "number of entries in the file dedup map",
 		},
 	)
+	s.FileMapHits = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: promNamespace,
+			Name:      "file_map_hits",
+			Help:      "number of entries in the file dedup map",
+		},
+	)
+	s.FileMapMisses = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: promNamespace,
+			Name:      "file_map_misses",
+			Help:      "number of entries in the file dedup map",
+		},
+	)
 	prometheus.MustRegister(s.PairTotal)
 	prometheus.MustRegister(s.GCTime)
 	prometheus.MustRegister(s.TotalComparisons)
@@ -90,6 +106,8 @@ func newStats(promNamespace string) *stats {
 	prometheus.MustRegister(s.ImageCacheNumImages)
 	prometheus.MustRegister(s.FileMapBytes)
 	prometheus.MustRegister(s.FileMapEntries)
+	prometheus.MustRegister(s.FileMapHits)
+	prometheus.MustRegister(s.FileMapMisses)
 
 	return s
 }
@@ -127,4 +145,6 @@ func (s *stats) unregister() {
 	prometheus.Unregister(s.ImageCacheNumImages)
 	prometheus.Unregister(s.FileMapBytes)
 	prometheus.Unregister(s.FileMapEntries)
+	prometheus.Unregister(s.FileMapHits)
+	prometheus.Unregister(s.FileMapMisses)
 }
