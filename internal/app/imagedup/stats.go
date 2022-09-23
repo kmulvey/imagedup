@@ -18,6 +18,7 @@ type stats struct {
 	ImageCacheBytes     prometheus.Gauge
 	ImageCacheNumImages prometheus.Gauge
 	FileMapBytes        prometheus.Gauge
+	FileMapEntries      prometheus.Gauge
 	PromNamespace       string
 }
 
@@ -74,6 +75,13 @@ func newStats(promNamespace string) *stats {
 			Help:      "size of the file dedup map",
 		},
 	)
+	s.FileMapEntries = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: promNamespace,
+			Name:      "file_map_entries",
+			Help:      "number of entries in the file dedup map",
+		},
+	)
 	prometheus.MustRegister(s.PairTotal)
 	prometheus.MustRegister(s.GCTime)
 	prometheus.MustRegister(s.TotalComparisons)
@@ -81,6 +89,7 @@ func newStats(promNamespace string) *stats {
 	prometheus.MustRegister(s.ImageCacheBytes)
 	prometheus.MustRegister(s.ImageCacheNumImages)
 	prometheus.MustRegister(s.FileMapBytes)
+	prometheus.MustRegister(s.FileMapEntries)
 
 	return s
 }
@@ -99,6 +108,7 @@ func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap, 
 
 		if dedupPairs {
 			bitmapLock.Lock()
+			s.FileMapEntries.Set(float64(fileMap.GetCardinality()))
 			var b, _ = fileMap.ToBytes()
 			s.FileMapBytes.Set(float64(len(b)))
 			bitmapLock.Unlock()
@@ -116,4 +126,5 @@ func (s *stats) unregister() {
 	prometheus.Unregister(s.ImageCacheBytes)
 	prometheus.Unregister(s.ImageCacheNumImages)
 	prometheus.Unregister(s.FileMapBytes)
+	prometheus.Unregister(s.FileMapEntries)
 }
