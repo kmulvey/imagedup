@@ -5,7 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
+
+	// _ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -28,9 +29,9 @@ func main() {
 	var start = time.Now()
 	var ctx, cancel = context.WithCancel(context.Background())
 
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
