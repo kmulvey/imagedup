@@ -37,5 +37,6 @@ INFO[2022-09-15 12:13:52] Shutting down
 INFO[2022-09-15 12:13:52] Total time taken: 17m24.991176074s 
 ```
 ### Compare Stats
+First run is without deduping file pairs, second is with it. 
 ![grafana screenshot](grafana/dedup-vs-not.png "grafana screenshot")
 
