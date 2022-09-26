@@ -1,4 +1,4 @@
-module github.com/kmulvey/imagedup
+module github.com/kmulvey/imagedup/v2
 
 go 1.18
 

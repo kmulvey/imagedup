@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
-	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
+	"github.com/kmulvey/imagedup/v2/internal/app/imagedup/hash"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

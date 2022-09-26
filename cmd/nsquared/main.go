@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kmulvey/imagedup/internal/app/imagedup"
-	"github.com/kmulvey/imagedup/pkg/imagedup/logger"
+	"github.com/kmulvey/imagedup/v2/internal/app/imagedup"
+	"github.com/kmulvey/imagedup/v2/pkg/imagedup/logger"
 	"github.com/kmulvey/path"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
