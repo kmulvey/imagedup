@@ -85,6 +85,8 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 	var imgCacheOne, imgCacheTwo *Image
 	var err error
 	var distance int
+	var p types.Pair
+	var open bool
 
 	for {
 		select {
@@ -93,7 +95,7 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 			close(results)
 			return
 		default:
-			p, open := <-dp.inputImages
+			p, open = <-dp.inputImages
 			if !open {
 				close(errors)
 				close(results)
