@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
-	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
-	"github.com/kmulvey/imagedup/pkg/imagedup/types"
+	"github.com/kmulvey/imagedup/v2/internal/app/imagedup/hash"
+	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
 )
 
 type ImageDup struct {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kmulvey/imagedup/pkg/imagedup/types"
+	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
 	"github.com/stretchr/testify/assert"
 )
 

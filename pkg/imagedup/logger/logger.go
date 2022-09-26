@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kmulvey/imagedup/internal/app/imagedup/hash"
+	"github.com/kmulvey/imagedup/v2/internal/app/imagedup/hash"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
