@@ -49,7 +49,6 @@ func main() {
 	// get user opts
 	var rootDir string
 	var cacheFile string
-	var outputFile string
 	var threads int
 	var distanceThreshold int
 	var dedupFilePairs bool
@@ -57,7 +56,6 @@ func main() {
 	var v bool
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
 	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes")
-	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
 	flag.BoolVar(&dedupFilePairs, "dedup-file-pairs", false, "dedup file pairs e.g. if a&b have been compared then dont comprare b&a as it will have the same result. doing this will reduce the time to diff but will also require more memory.")
@@ -87,9 +85,6 @@ func main() {
 	}
 	if filepath.Ext(cacheFile) != ".json" {
 		log.Fatal("cache file must have extension .json")
-	}
-	if filepath.Ext(outputFile) != ".log" {
-		log.Fatal("output file must have extension .log")
 	}
 
 	// list all the dirs
