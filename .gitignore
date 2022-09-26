@@ -16,6 +16,8 @@
 cmd/verify/verify
 cmd/nsquared/nsquared
 cmd/nsquared/cache.json
+cmd/nsquared/delete.log
 cmd/uniqdirs/cache.json
 cmd/uniqdirs/uniqdirs
+cmd/verify/delete.log
 dist/
