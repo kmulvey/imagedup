@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kmulvey/goutils"
 	"github.com/kmulvey/path"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,4 +42,22 @@ func TestCache(t *testing.T) {
 
 	err = os.RemoveAll(cacheFile)
 	assert.NoError(t, err)
+}
+
+func BenchmarkGetHash(b *testing.B) {
+
+	var cacheFile = "testcache.json"
+
+	var cache, err = NewCache(cacheFile, goutils.RandomString(5), 3)
+	assert.NoError(b, err)
+
+	files, err := path.ListFiles("../testimages")
+	assert.NoError(b, err)
+	var fileNames = path.OnlyNames(path.OnlyFiles(files))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err = cache.GetHash(fileNames[0])
+		assert.NoError(b, err)
+	}
 }
