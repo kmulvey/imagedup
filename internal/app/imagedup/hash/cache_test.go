@@ -60,4 +60,7 @@ func BenchmarkGetHash(b *testing.B) {
 		_, err = cache.GetHash(fileNames[0])
 		assert.NoError(b, err)
 	}
+
+	err = os.RemoveAll(cacheFile)
+	assert.NoError(b, err)
 }
