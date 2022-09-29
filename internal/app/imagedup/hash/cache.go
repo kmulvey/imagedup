@@ -143,7 +143,6 @@ func (h *Cache) GetHash(file string) (*Image, error) {
 }
 
 // Persist writes the cache to disk
-// https://pkg.go.dev/github.com/corona10/goimagehash#ImageHash.Dump
 func (h *Cache) Persist() error {
 
 	var f, err = os.Create(h.storeFileName)
