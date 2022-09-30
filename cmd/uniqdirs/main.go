@@ -127,7 +127,7 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir, cacheFile str
 
 	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + ".log")
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, len(files), distanceThreshold, dedupFilePairs)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, dir, threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)

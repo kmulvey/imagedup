@@ -15,7 +15,7 @@ func TestNewImageDup(t *testing.T) {
 
 	var cacheFile = "TestNewImageDup.json"
 
-	var dup, err = NewImageDup("TestNewImageDup", cacheFile, 2, 3, 10, true)
+	var dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 3, 10, true)
 	assert.NoError(t, err)
 
 	files, err := path.ListFiles("./testimages")

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -27,6 +28,10 @@ import (
 func main() {
 	var start = time.Now()
 	var ctx, cancel = context.WithCancel(context.Background())
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -103,7 +108,7 @@ func main() {
 	// start er up
 	resultsLogger, err := logger.NewDeleteLogger(outputFile)
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, len(files), distanceThreshold, dedupFilePairs)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, rootDir, threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)

@@ -103,13 +103,13 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 			}
 			start = time.Now()
 
-			imgCacheOne, err = dp.cache.GetHash(p.One)
+			imgCacheOne, err = dp.cache.GetHash(p.I, p.One)
 			if err != nil {
 				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.One, err)
 				continue
 			}
 
-			imgCacheTwo, err = dp.cache.GetHash(p.Two)
+			imgCacheTwo, err = dp.cache.GetHash(p.J, p.Two)
 			if err != nil {
 				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.Two, err)
 				continue

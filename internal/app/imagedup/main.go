@@ -19,7 +19,7 @@ type ImageDup struct {
 	bitmapLock sync.RWMutex
 }
 
-func NewImageDup(promNamespace, hashCacheFile string, numWorkers, numFiles, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
+func NewImageDup(promNamespace, hashCacheFile, globPattern string, numWorkers, numFiles, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
 	var id = new(ImageDup)
 	var err error
 
@@ -30,7 +30,7 @@ func NewImageDup(promNamespace, hashCacheFile string, numWorkers, numFiles, dist
 		id.Bitmap = roaring64.New()
 	}
 
-	id.Cache, err = hash.NewCache(hashCacheFile, promNamespace, numFiles)
+	id.Cache, err = hash.NewCache(hashCacheFile, globPattern, promNamespace, numFiles)
 	if err != nil {
 		return nil, err
 	}

@@ -16,8 +16,9 @@ import (
 type Cache struct {
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
-	store            map[string]*Image
+	store            []*Image
 	storeFileName    string
+	globPattern      string
 	lock             sync.RWMutex
 }
 
@@ -29,14 +30,18 @@ type Image struct {
 
 // hashExportType is a stripped down type with just the necessary data which is intended to be
 // persisted to disk so we dont need to calculate the hash again.
-type hashExportType map[string]uint64
+type hashExportType struct {
+	GlobPattern string
+	Hashes      []uint64
+}
 
 // NewCache reads the given file to rebuild its map from the last time it was run.
 // If the file does not exist, it will be created.
-func NewCache(file, promNamespace string, numFiles int) (*Cache, error) {
+func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, error) {
 	var hc = new(Cache)
-	hc.store = make(map[string]*Image, numFiles)
+	hc.store = make([]*Image, numFiles)
 	hc.storeFileName = file
+	hc.globPattern = globPattern
 	hc.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -63,15 +68,21 @@ func NewCache(file, promNamespace string, numFiles int) (*Cache, error) {
 		return hc, nil
 	}
 
-	// load map to file
-	var m = make(hashExportType)
+	// load array from file
+	var m = new(hashExportType)
 	err = json.NewDecoder(f).Decode(&m)
 	if err != nil {
 		return nil, fmt.Errorf("HashCache error decoding json file: %s, err: %w", file, err)
 	}
 
-	for name, hash := range m {
-		hc.store[name] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
+	if len(m.Hashes) > 0 {
+		if globPattern != m.GlobPattern {
+			return nil, fmt.Errorf("Previous glob: %s from file: %s does not match new glob: %s, please specify a new cache file", m.GlobPattern, file, globPattern)
+		}
+
+		for i, hash := range m.Hashes {
+			hc.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
+		}
 	}
 
 	err = f.Close()
@@ -92,50 +103,50 @@ func (h *Cache) Stats() (int, int) {
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
-func (h *Cache) GetHash(file string) (*Image, error) {
+func (h *Cache) GetHash(fileIndex int, fileName string) (*Image, error) {
 
 	h.lock.RLock()
-	var imgCache, ok = h.store[file]
+	var imgData = h.store[fileIndex]
 	h.lock.RUnlock()
 
-	if ok {
+	if imgData != nil {
 		h.imageCacheHits.Inc()
-		return imgCache, nil
+		return imgData, nil
 	} else {
 		h.imageCacheMisses.Inc()
 		var imgCache = new(Image)
 
-		var fileHandle, err = os.Open(file)
+		var fileHandle, err = os.Open(fileName)
 		if err != nil {
-			return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", file, err)
+			return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", fileName, err)
 		}
 
 		img, err := jpeg.Decode(fileHandle)
 		if err != nil {
-			return nil, fmt.Errorf("HashCache error decoding jpeg file: %s, err: %w", file, err)
+			return nil, fmt.Errorf("HashCache error decoding jpeg file: %s, err: %w", fileName, err)
 		}
 
 		imgCache.ImageHash, err = goimagehash.PerceptionHash(img)
 		if err != nil {
-			return nil, fmt.Errorf("HashCache error calculating hash for file: %s, err: %w", file, err)
+			return nil, fmt.Errorf("HashCache error calculating hash for file: %s, err: %w", fileName, err)
 		}
 
 		_, err = fileHandle.Seek(0, 0) // reset file reader
 		if err != nil {
-			return nil, fmt.Errorf("HashCache error rewinding file: %s, err: %w", file, err)
+			return nil, fmt.Errorf("HashCache error rewinding file: %s, err: %w", fileName, err)
 		}
 
 		imgCache.Config, err = jpeg.DecodeConfig(fileHandle)
 		if err != nil {
-			return nil, fmt.Errorf("HashCache error decoding jpeg config file: %s, err: %w", file, err)
+			return nil, fmt.Errorf("HashCache error decoding jpeg config file: %s, err: %w", fileName, err)
 		}
 
 		h.lock.Lock()
-		h.store[file] = imgCache
+		h.store[fileIndex] = imgCache
 		h.lock.Unlock()
 
 		if err = fileHandle.Close(); err != nil {
-			return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", file, err)
+			return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", fileName, err)
 		}
 
 		return imgCache, nil
@@ -152,9 +163,11 @@ func (h *Cache) Persist() error {
 
 	// dump map to file
 	h.lock.Lock()
-	var m = make(hashExportType)
-	for name, hash := range h.store {
-		m[name] = hash.GetHash()
+	var m = new(hashExportType)
+	m.GlobPattern = h.globPattern
+	m.Hashes = make([]uint64, len(h.store))
+	for i, hash := range h.store {
+		m.Hashes[i] = hash.GetHash()
 	}
 	h.lock.Unlock()
 

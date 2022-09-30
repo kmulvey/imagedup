@@ -16,7 +16,7 @@ func TestDiffer(t *testing.T) {
 	var cacheFile = "testdiffer.json"
 	var inputImages = make(chan types.Pair)
 
-	var cache, err = NewCache(cacheFile, "testdiffer", 3)
+	var cache, err = NewCache(cacheFile, "glob", "testdiffer", 3)
 	assert.NoError(t, err)
 
 	var differ = NewDiffer(2, 10, inputImages, cache, "testdiffer")
@@ -41,6 +41,8 @@ func TestDiffer(t *testing.T) {
 					continue
 				}
 				assert.True(t, strings.Contains(diff.One, "iceland"))
+				assert.False(t, strings.Contains(diff.One, "trees"))
+				assert.False(t, strings.Contains(diff.Two, "trees"))
 				i++
 			}
 		}
@@ -48,9 +50,9 @@ func TestDiffer(t *testing.T) {
 		close(done)
 	}()
 
-	inputImages <- types.Pair{One: "../testimages/iceland.jpg", Two: "../testimages/iceland.jpg"}
-	inputImages <- types.Pair{One: "../testimages/iceland-small.jpg", Two: "../testimages/iceland.jpg"}
-	inputImages <- types.Pair{One: "../testimages/iceland-small.jpg", Two: "../testimages/trees.jpg"}
+	inputImages <- types.Pair{I: 0, One: "../testimages/iceland.jpg", J: 0, Two: "../testimages/iceland.jpg"}
+	inputImages <- types.Pair{I: 1, One: "../testimages/iceland-small.jpg", J: 0, Two: "../testimages/iceland.jpg"}
+	inputImages <- types.Pair{I: 1, One: "../testimages/iceland-small.jpg", J: 2, Two: "../testimages/trees.jpg"}
 	close(inputImages)
 
 	<-done
