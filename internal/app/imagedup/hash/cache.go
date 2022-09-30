@@ -38,24 +38,24 @@ type hashExportType struct {
 // NewCache reads the given file to rebuild its map from the last time it was run.
 // If the file does not exist, it will be created.
 func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, error) {
-	var hc = new(Cache)
-	hc.store = make([]*Image, numFiles)
-	hc.storeFileName = file
-	hc.globPattern = globPattern
-	hc.imageCacheHits = prometheus.NewCounter(
+	var c = new(Cache)
+	c.store = make([]*Image, numFiles)
+	c.storeFileName = file
+	c.globPattern = globPattern
+	c.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
 			Name:      "image_hash_cache_hits",
 		},
 	)
-	hc.imageCacheMisses = prometheus.NewCounter(
+	c.imageCacheMisses = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
 			Name:      "image_hash_cache_misses",
 		},
 	)
-	prometheus.MustRegister(hc.imageCacheHits)
-	prometheus.MustRegister(hc.imageCacheMisses)
+	prometheus.MustRegister(c.imageCacheHits)
+	prometheus.MustRegister(c.imageCacheMisses)
 
 	// try to open the file, if it doesnt exist, create it
 	var f, err = os.OpenFile(file, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
@@ -63,9 +63,9 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 		return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", file, err)
 	}
 	if info, err := f.Stat(); err != nil {
-		return hc, fmt.Errorf("HashCache error stating file: %s, err: %w", file, err)
+		return c, fmt.Errorf("HashCache error stating file: %s, err: %w", file, err)
 	} else if info.Size() == 0 {
-		return hc, nil
+		return c, nil
 	}
 
 	// load array from file
@@ -81,7 +81,7 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 		}
 
 		for i, hash := range m.Hashes {
-			hc.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
+			c.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
 		}
 	}
 
@@ -90,30 +90,30 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 		return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", file, err)
 	}
 
-	return hc, nil
+	return c, nil
 }
 
 // NumImages returns the number of images in the cache
-func (h *Cache) Stats() (int, int) {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
+func (c *Cache) Stats() (int, int) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
-	var length = len(h.store)
+	var length = len(c.store)
 	return length, length * 48
 }
 
 // GetHash gets the hash from cache or if it does not exist it calcs it
-func (h *Cache) GetHash(fileIndex int, fileName string) (*Image, error) {
+func (c *Cache) GetHash(fileIndex int, fileName string) (*Image, error) {
 
-	h.lock.RLock()
-	var imgData = h.store[fileIndex]
-	h.lock.RUnlock()
+	c.lock.RLock()
+	var imgData = c.store[fileIndex]
+	c.lock.RUnlock()
 
 	if imgData != nil {
-		h.imageCacheHits.Inc()
+		c.imageCacheHits.Inc()
 		return imgData, nil
 	} else {
-		h.imageCacheMisses.Inc()
+		c.imageCacheMisses.Inc()
 		var imgCache = new(Image)
 
 		var fileHandle, err = os.Open(fileName)
@@ -141,9 +141,9 @@ func (h *Cache) GetHash(fileIndex int, fileName string) (*Image, error) {
 			return nil, fmt.Errorf("HashCache error decoding jpeg config file: %s, err: %w", fileName, err)
 		}
 
-		h.lock.Lock()
-		h.store[fileIndex] = imgCache
-		h.lock.Unlock()
+		c.lock.Lock()
+		c.store[fileIndex] = imgCache
+		c.lock.Unlock()
 
 		if err = fileHandle.Close(); err != nil {
 			return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", fileName, err)
@@ -154,34 +154,34 @@ func (h *Cache) GetHash(fileIndex int, fileName string) (*Image, error) {
 }
 
 // Persist writes the cache to disk
-func (h *Cache) Persist() error {
+func (c *Cache) Persist() error {
 
-	var f, err = os.Create(h.storeFileName)
+	var f, err = os.Create(c.storeFileName)
 	if err != nil {
-		return fmt.Errorf("HashCache error creating file: %s, err: %w", h.storeFileName, err)
+		return fmt.Errorf("HashCache error creating file: %s, err: %w", c.storeFileName, err)
 	}
 
 	// dump map to file
-	h.lock.Lock()
+	c.lock.Lock()
 	var m = new(hashExportType)
-	m.GlobPattern = h.globPattern
-	m.Hashes = make([]uint64, len(h.store))
-	for i, hash := range h.store {
+	m.GlobPattern = c.globPattern
+	m.Hashes = make([]uint64, len(c.store))
+	for i, hash := range c.store {
 		m.Hashes[i] = hash.GetHash()
 	}
-	h.lock.Unlock()
+	c.lock.Unlock()
 
 	err = json.NewEncoder(f).Encode(m)
 	if err != nil {
-		return fmt.Errorf("HashCache error json encoding file: %s, err: %w", h.storeFileName, err)
+		return fmt.Errorf("HashCache error json encoding file: %s, err: %w", c.storeFileName, err)
 	}
 
 	if err = f.Close(); err != nil {
-		return fmt.Errorf("HashCache error closing file: %s, err: %w", h.storeFileName, err)
+		return fmt.Errorf("HashCache error closing file: %s, err: %w", c.storeFileName, err)
 	}
 
-	prometheus.Unregister(h.imageCacheHits)
-	prometheus.Unregister(h.imageCacheMisses)
+	prometheus.Unregister(c.imageCacheHits)
+	prometheus.Unregister(c.imageCacheMisses)
 
 	return nil
 }

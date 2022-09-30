@@ -35,7 +35,7 @@ func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, c
 		numWorkers = 1
 	}
 
-	var dp = &Differ{
+	var d = &Differ{
 		inputImages:       inputImages,
 		cache:             cache,
 		distanceThreshold: distanceThreshold,
@@ -52,33 +52,33 @@ func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, c
 				Name:      "comparisons_completed",
 			}),
 	}
-	prometheus.MustRegister(dp.diffTime)
-	prometheus.MustRegister(dp.comparisonsCompleted)
+	prometheus.MustRegister(d.diffTime)
+	prometheus.MustRegister(d.comparisonsCompleted)
 
-	return dp
+	return d
 }
 
-func (dp *Differ) Shutdown() {
-	prometheus.Unregister(dp.diffTime)
-	prometheus.Unregister(dp.comparisonsCompleted)
+func (d *Differ) Shutdown() {
+	prometheus.Unregister(d.diffTime)
+	prometheus.Unregister(d.comparisonsCompleted)
 }
 
-func (dp *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
-	var errorChans = make([]chan error, dp.numWorkers)
-	var resultChans = make([]chan DiffResult, dp.numWorkers)
+func (d *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
+	var errorChans = make([]chan error, d.numWorkers)
+	var resultChans = make([]chan DiffResult, d.numWorkers)
 
-	for i := 0; i < dp.numWorkers; i++ {
+	for i := 0; i < d.numWorkers; i++ {
 		var errors = make(chan error)
 		var results = make(chan DiffResult)
 		errorChans[i] = errors
 		resultChans[i] = results
-		go dp.diffWorker(ctx, results, errors)
+		go d.diffWorker(ctx, results, errors)
 	}
 
 	return goutils.MergeChannels(resultChans...), goutils.MergeChannels(errorChans...)
 }
 
-func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, errors chan error) {
+func (d *Differ) diffWorker(ctx context.Context, results chan DiffResult, errors chan error) {
 
 	// declare these here to reduce allocations in the loop
 	var start time.Time
@@ -95,7 +95,7 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 			close(results)
 			return
 		default:
-			p, open = <-dp.inputImages
+			p, open = <-d.inputImages
 			if !open {
 				close(errors)
 				close(results)
@@ -103,13 +103,13 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 			}
 			start = time.Now()
 
-			imgCacheOne, err = dp.cache.GetHash(p.I, p.One)
+			imgCacheOne, err = d.cache.GetHash(p.I, p.One)
 			if err != nil {
 				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.One, err)
 				continue
 			}
 
-			imgCacheTwo, err = dp.cache.GetHash(p.J, p.Two)
+			imgCacheTwo, err = d.cache.GetHash(p.J, p.Two)
 			if err != nil {
 				errors <- fmt.Errorf("GetHash failed for image: %s, err: %w", p.Two, err)
 				continue
@@ -121,12 +121,12 @@ func (dp *Differ) diffWorker(ctx context.Context, results chan DiffResult, error
 				continue
 			}
 
-			if distance <= dp.distanceThreshold {
+			if distance <= d.distanceThreshold {
 				results <- DiffResult{One: p.One, OneArea: imgCacheOne.Config.Height * imgCacheOne.Config.Width, Two: p.Two, TwoArea: imgCacheTwo.Config.Height * imgCacheTwo.Config.Width}
 			}
 
-			dp.diffTime.Set(float64(time.Since(start)))
-			dp.comparisonsCompleted.Inc()
+			d.diffTime.Set(float64(time.Since(start)))
+			d.comparisonsCompleted.Inc()
 		}
 	}
 }
