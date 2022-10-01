@@ -48,14 +48,12 @@ func main() {
 
 	// get user opts
 	var rootDir string
-	var cacheFile string
 	var threads int
 	var distanceThreshold int
 	var dedupFilePairs bool
 	var help bool
 	var v bool
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
-	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
 	flag.BoolVar(&dedupFilePairs, "dedup-file-pairs", false, "dedup file pairs e.g. if a&b have been compared then dont comprare b&a as it will have the same result. doing this will reduce the time to diff but will also require more memory.")
@@ -83,9 +81,6 @@ func main() {
 	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
 		threads = 1
 	}
-	if filepath.Ext(cacheFile) != ".json" {
-		log.Fatal("cache file must have extension .json")
-	}
 
 	// list all the dirs
 	files, err := path.ListFiles(rootDir)
@@ -97,7 +92,7 @@ func main() {
 		log.Infof("Starting %s", dir)
 
 		var ctx, cancel = context.WithCancel(context.Background())
-		dedupDir(ctx, cancel, dir, cacheFile, threads, distanceThreshold, dedupFilePairs, gracefulShutdown)
+		dedupDir(ctx, cancel, dir, threads, distanceThreshold, dedupFilePairs, gracefulShutdown)
 
 		// delete emptys
 		var logFile, err = os.Stat(filepath.Base(dir) + ".log")
@@ -117,7 +112,7 @@ func handleErr(prefix string, err error) {
 	}
 }
 
-func dedupDir(ctx context.Context, cancel context.CancelFunc, dir, cacheFile string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) {
+func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) {
 	// list all the files
 	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
@@ -127,7 +122,7 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir, cacheFile str
 
 	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + ".log")
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, dir, threads, len(files), distanceThreshold, dedupFilePairs)
+	id, err := imagedup.NewImageDup("imagedup", filepath.Base(dir)+".json", dir, threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)
