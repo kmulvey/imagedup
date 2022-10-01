@@ -12,7 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Cache stores a map of image hashes from corona10/goimagehash
+// Cache stores an array of image hashes from corona10/goimagehash
 type Cache struct {
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
@@ -93,7 +93,7 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 	return c, nil
 }
 
-// NumImages returns the number of images in the cache
+// Stats returns the number of images in the cache
 func (c *Cache) Stats() (int, int) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()

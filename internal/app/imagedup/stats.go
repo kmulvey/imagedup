@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// stats are prometheus stats for imagedup
 type stats struct {
 	PairTotal           prometheus.Counter
 	GCTime              prometheus.Gauge
@@ -24,6 +25,7 @@ type stats struct {
 	PromNamespace       string
 }
 
+// newStats inits all the stats
 func newStats(promNamespace string) *stats {
 	var s = new(stats)
 	s.PromNamespace = promNamespace
@@ -136,6 +138,7 @@ func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap, 
 	}
 }
 
+// unregister removes all the stats
 func (s *stats) unregister() {
 	prometheus.Unregister(s.PairTotal)
 	prometheus.Unregister(s.GCTime)

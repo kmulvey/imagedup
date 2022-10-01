@@ -7,6 +7,8 @@ import (
 	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
 )
 
+// streamFiles generates roughly n^2 comparisons and writes them to a channel that
+// is read by the diff workers.
 func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 	var numImages = float64(len(files))
 	if id.dedupPairs {
@@ -17,8 +19,7 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 
 	for i, one := range files {
 		for j, two := range files {
-			if i != j {
-				// this protects us from getting nil exception when shutting down
+			if i != j { // dont diff yourself
 				select {
 				case <-ctx.Done():
 					close(id.images)

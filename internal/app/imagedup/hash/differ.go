@@ -11,7 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Differ
+// Differ diffs images
 type Differ struct {
 	diffTime             prometheus.Gauge
 	comparisonsCompleted prometheus.Gauge
@@ -29,6 +29,7 @@ type DiffResult struct {
 	TwoArea int
 }
 
+// NewDiffer is the constructor, Run() must be called to start diffing
 func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, cache *Cache, promNamespace string) *Differ {
 
 	if numWorkers <= 0 || numWorkers > runtime.GOMAXPROCS(0)-1 {
@@ -58,11 +59,13 @@ func NewDiffer(numWorkers, distanceThreshold int, inputImages chan types.Pair, c
 	return d
 }
 
+// Shutdown unregisters prom stats
 func (d *Differ) Shutdown() {
 	prometheus.Unregister(d.diffTime)
 	prometheus.Unregister(d.comparisonsCompleted)
 }
 
+// Run starts the diff workers
 func (d *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
 	var errorChans = make([]chan error, d.numWorkers)
 	var resultChans = make([]chan DiffResult, d.numWorkers)
@@ -78,6 +81,7 @@ func (d *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
 	return goutils.MergeChannels(resultChans...), goutils.MergeChannels(errorChans...)
 }
 
+// diffWorker compares two imamges to determine if they are similar.
 func (d *Differ) diffWorker(ctx context.Context, results chan DiffResult, errors chan error) {
 
 	// declare these here to reduce allocations in the loop
