@@ -13,10 +13,17 @@ Got a lot of images with many duplicates? Maybe of different sizes? `imagedup` u
 
 ./verify -delete-file delete.log
 ```
-
 print help:
 
 `imagedup -h`
+
+### cache file
+The cache contains hashes that correspond to the image in -dir and thus if -dir changes so should -cache-file, e.g.
+- `-cache-file one.json -dir /path/to/one`
+- `-cache-file two.json -dir /path/to/two`
+
+Passing a -cache-file with a different -dir will result in an error, e.g.
+- `-cache-file one.json -dir /path/to/two`
 
 ## Deduping pairs of images
 Deduping is done with a roaring bitmap which will reduce the number of comparisons by half but will increase memory usage. This is a tradeoff you will need to consider. This feature is disabled by default and can be changed by passing `-dedup-file-pairs`.
