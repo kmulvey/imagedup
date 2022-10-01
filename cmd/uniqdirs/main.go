@@ -92,7 +92,9 @@ func main() {
 		log.Infof("Starting %s", dir)
 
 		var ctx, cancel = context.WithCancel(context.Background())
-		dedupDir(ctx, cancel, dir, threads, distanceThreshold, dedupFilePairs, gracefulShutdown)
+		if continueLoop := dedupDir(ctx, cancel, dir, threads, distanceThreshold, dedupFilePairs, gracefulShutdown); !continueLoop {
+			break
+		}
 
 		// delete emptys
 		var logFile, err = os.Stat(filepath.Base(dir) + ".log")
@@ -112,7 +114,8 @@ func handleErr(prefix string, err error) {
 	}
 }
 
-func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) {
+// dedupDir returns a bool representing 'continue' which is usually true except when an os signal is recieved, then false
+func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
 	// list all the files
 	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
@@ -129,11 +132,10 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 
 	// wait for all diff workers to finish or we get a shutdown signal
 	// whichever comes first
-CollectionLoop:
 	for results != nil || errors != nil {
 		select {
 		case <-gracefulShutdown:
-			break CollectionLoop
+			return false
 		default:
 			select {
 			case result, open := <-results:
@@ -158,4 +160,6 @@ CollectionLoop:
 	if err != nil {
 		log.Fatal("error shutting down", err)
 	}
+
+	return true
 }
