@@ -113,6 +113,7 @@ func main() {
 	}
 }
 
+// fileExists returns true if the file exists
 func fileExists(fileName string) bool {
 	if _, err := os.Stat(fileName); err == nil {
 		return true
@@ -120,6 +121,8 @@ func fileExists(fileName string) bool {
 	return false
 }
 
+// dedupFile takes the output of imagedup and creates a unique list of pairs. ImageDup can
+// return duplicated if is not run with -dedup-file-pairs
 func dedupFile(file *os.File) []pair {
 	var scanner = bufio.NewScanner(file)
 	var imagePairs []pair
