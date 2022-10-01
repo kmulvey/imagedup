@@ -49,7 +49,7 @@ func main() {
 	}()
 
 	// get user opts
-	var rootDir string
+	var dir string
 	var cacheFile string
 	var outputFile string
 	var threads int
@@ -57,7 +57,7 @@ func main() {
 	var dedupFilePairs bool
 	var help bool
 	var v bool
-	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
+	flag.StringVar(&dir, "dir", "", "directory (abs path)")
 	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes")
 	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
@@ -81,7 +81,7 @@ func main() {
 		}
 		os.Exit(0)
 	}
-	if strings.TrimSpace(rootDir) == "" {
+	if strings.TrimSpace(dir) == "" {
 		log.Fatal("directory not provided")
 	}
 	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
@@ -95,7 +95,7 @@ func main() {
 	}
 
 	// list all the files
-	var files, err = path.ListFilesWithFilter(rootDir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
+	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
@@ -103,7 +103,7 @@ func main() {
 	// start er up
 	resultsLogger, err := logger.NewDeleteLogger(outputFile)
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, rootDir, threads, len(files), distanceThreshold, dedupFilePairs)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, dir, threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)
