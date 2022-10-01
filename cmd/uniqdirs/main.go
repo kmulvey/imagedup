@@ -114,7 +114,7 @@ func handleErr(prefix string, err error) {
 	}
 }
 
-// dedupDir returns a bool representing 'continue' which is usually true except when an os signal is recieved, then false
+// dedupDir returns a bool representing 'continue' which is usually true except when an os signal is received, then false
 func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
 	// list all the files
 	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
