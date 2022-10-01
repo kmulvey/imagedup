@@ -16,9 +16,9 @@ import (
 type Cache struct {
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
-	store            []*Image
-	storeFileName    string
 	globPattern      string
+	storeFileName    string
+	store            []*Image
 	lock             sync.RWMutex
 }
 
