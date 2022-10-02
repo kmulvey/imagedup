@@ -58,7 +58,7 @@ func main() {
 	var help bool
 	var v bool
 	flag.StringVar(&dir, "dir", "", "directory (abs path)")
-	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes")
+	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes which be different for different input dirs")
 	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
