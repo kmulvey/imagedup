@@ -99,6 +99,9 @@ func main() {
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
+	if len(files) < 2 {
+		log.Fatalf("Skipping %s because there are only %d files", dir, len(files))
+	}
 
 	// start er up
 	resultsLogger, err := logger.NewDeleteLogger(outputFile)

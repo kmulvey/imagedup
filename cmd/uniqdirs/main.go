@@ -98,7 +98,9 @@ func main() {
 
 		// delete emptys
 		var logFile, err = os.Stat(filepath.Base(dir) + ".log")
-		handleErr("stat log file", err)
+		if err != nil {
+			continue
+		}
 		if logFile.Size() == 0 {
 			err = os.RemoveAll(filepath.Base(dir) + ".log")
 			handleErr("remove log file", err)
@@ -121,6 +123,10 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
+	if len(files) < 2 {
+		log.Infof("Skipping %s because there are only %d files", dir, len(files))
+		return true
+	}
 	// start er up
 
 	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + ".log")
