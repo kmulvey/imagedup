@@ -19,7 +19,36 @@ func TestStreamFiles(t *testing.T) {
 	t.Parallel()
 
 	var cacheFile = "TestStreamFiles"
-	var id, err = NewImageDup("TestStreamFiles", cacheFile, "glob", 2, 3, 10, true)
+	var id, err = NewImageDup("TestStreamFiles", cacheFile, "glob", 2, 3, 10, false)
+	assert.NoError(t, err)
+
+	var done = make(chan struct{})
+	go func() {
+		for img := range id.images {
+			delete(expectedPairs, img.One+img.Two)
+		}
+		assert.Equal(t, 0, len(expectedPairs))
+
+		close(done)
+	}()
+
+	files, err := path.ListFiles("./testimages")
+	assert.NoError(t, err)
+	files = path.OnlyFiles(files)
+	var fileNames = path.OnlyNames(files)
+
+	id.streamFiles(context.Background(), fileNames)
+
+	<-done
+
+	assert.NoError(t, os.RemoveAll(cacheFile))
+}
+
+func TestStreamFilesDedup(t *testing.T) {
+	t.Parallel()
+
+	var cacheFile = "TestStreamFiles"
+	var id, err = NewImageDup("TestStreamFilesDedup", cacheFile, "glob", 2, 3, 10, true)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
