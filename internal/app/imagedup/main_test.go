@@ -15,7 +15,10 @@ func TestNewImageDup(t *testing.T) {
 
 	var cacheFile = "TestNewImageDup.json"
 
-	var dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 3, 10, true)
+	var dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 1, 10, true)
+	assert.Equal(t, "Skipping glob because there are only 1 files", err.Error())
+
+	dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 3, 10, true)
 	assert.NoError(t, err)
 
 	files, err := path.ListFiles("./testimages")
@@ -49,6 +52,8 @@ func TestNewImageDup(t *testing.T) {
 	}()
 
 	<-done
+
+	assert.NoError(t, dup.Shutdown())
 
 	err = os.RemoveAll(cacheFile)
 	assert.NoError(t, err)
