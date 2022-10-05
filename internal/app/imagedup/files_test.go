@@ -9,15 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedPairs = map[string]struct{}{
-	"testimages/iceland-small.jpgtestimages/iceland.jpg": {},
-	"testimages/iceland-small.jpgtestimages/trees.jpg":   {},
-	"testimages/iceland.jpgtestimages/trees.jpg":         {},
-}
-
 func TestStreamFiles(t *testing.T) {
 	t.Parallel()
 
+	var expectedPairs = map[string]struct{}{
+		"testimages/iceland-small.jpgtestimages/iceland.jpg": {},
+		"testimages/iceland-small.jpgtestimages/trees.jpg":   {},
+		"testimages/iceland.jpgtestimages/trees.jpg":         {},
+	}
 	var cacheFile = "TestStreamFiles"
 	var id, err = NewImageDup("TestStreamFiles", cacheFile, "glob", 2, 3, 10, false)
 	assert.NoError(t, err)
@@ -47,7 +46,12 @@ func TestStreamFiles(t *testing.T) {
 func TestStreamFilesDedup(t *testing.T) {
 	t.Parallel()
 
-	var cacheFile = "TestStreamFiles"
+	var expectedPairs = map[string]struct{}{
+		"testimages/iceland-small.jpgtestimages/iceland.jpg": {},
+		"testimages/iceland-small.jpgtestimages/trees.jpg":   {},
+		"testimages/iceland.jpgtestimages/trees.jpg":         {},
+	}
+	var cacheFile = "TestStreamFilesDedup"
 	var id, err = NewImageDup("TestStreamFilesDedup", cacheFile, "glob", 2, 3, 10, true)
 	assert.NoError(t, err)
 

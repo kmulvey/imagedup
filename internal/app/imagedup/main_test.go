@@ -17,6 +17,7 @@ func TestNewImageDup(t *testing.T) {
 
 	var dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 1, 10, true)
 	assert.Equal(t, "Skipping glob because there are only 1 files", err.Error())
+	assert.Nil(t, dup)
 
 	dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 3, 10, true)
 	assert.NoError(t, err)
