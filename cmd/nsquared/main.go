@@ -95,9 +95,7 @@ func main() {
 	}
 
 	// list all the files
-	var re, err = regexp.Compile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$")
-	handleErr("regex compile", err)
-	files, err := path.ListFilesWithFilter(dir, re)
+	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
