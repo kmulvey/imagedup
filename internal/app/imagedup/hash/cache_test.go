@@ -2,7 +2,6 @@ package hash
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -51,7 +50,7 @@ func TestBadCacheFile(t *testing.T) {
 	t.Parallel()
 
 	var cacheFile = "TestBadCacheFile.json"
-	assert.NoError(t, ioutil.WriteFile(cacheFile, []byte("not json"), 0644))
+	assert.NoError(t, os.WriteFile(cacheFile, []byte("not json"), 0600))
 
 	var cache, err = NewCache(cacheFile, "glob", "TestBadCacheFile", 3)
 	assert.Equal(t, "HashCache error decoding json file: TestBadCacheFile.json, err: invalid character 'o' in literal null (expecting 'u')", err.Error())
@@ -71,7 +70,7 @@ func TestDifferentGlob(t *testing.T) {
 	}
 	js, err := json.Marshal(fileData)
 	assert.NoError(t, err)
-	assert.NoError(t, ioutil.WriteFile(cacheFile, js, 0644))
+	assert.NoError(t, os.WriteFile(cacheFile, js, 0600))
 
 	cache, err := NewCache(cacheFile, "different glob", "TestDifferentGlob", 3)
 	assert.Equal(t, "Previous glob: 'glob' from file: TestDifferentGlob.json does not match new glob: 'different glob', please specify a new cache file", err.Error())
