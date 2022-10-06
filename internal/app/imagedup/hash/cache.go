@@ -77,7 +77,7 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 
 	if len(m.Hashes) > 0 {
 		if globPattern != m.GlobPattern {
-			return nil, fmt.Errorf("Previous glob: %s from file: %s does not match new glob: %s, please specify a new cache file", m.GlobPattern, file, globPattern)
+			return nil, fmt.Errorf("Previous glob: '%s' from file: %s does not match new glob: '%s', please specify a new cache file", m.GlobPattern, file, globPattern)
 		}
 
 		for i, hash := range m.Hashes {
