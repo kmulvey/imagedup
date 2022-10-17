@@ -179,8 +179,8 @@ github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/X
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/kmulvey/goutils v0.4.0 h1:fci0ecbdGMsILWoBLmMVNhpz5cRv2XN5DfG6mRa8UpM=
-github.com/kmulvey/goutils v0.4.0/go.mod h1:DCUhjtkRdyTKfAWTNgYCL/JhQeYLGZLMuP1YeubD+g0=
+github.com/kmulvey/goutils v0.6.0 h1:N3ZW0f9jf0lzXE7/LeDNw1jBDHiKnvX89/D9F37h/lU=
+github.com/kmulvey/goutils v0.6.0/go.mod h1:piD3FiBNFCOGTorRV2yFpjOUQFXVO5IiCHx0Nmmom8g=
 github.com/kmulvey/path v0.8.0 h1:WfgaUv+7eR9umQ9wRuHYEXz0iCgJK5SEp81qdCEeZ/s=
 github.com/kmulvey/path v0.8.0/go.mod h1:i2I12ZB9enQFA0m+W0dm4xjYzIhQXGXIlLGFHFwTvlI=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
