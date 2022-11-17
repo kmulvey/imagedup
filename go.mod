@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.1
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.6.0
-	github.com/kmulvey/path v0.9.0
+	github.com/kmulvey/path v0.11.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
@@ -23,6 +23,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.3.3 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/goccy/go-yaml v1.9.5 // indirect
