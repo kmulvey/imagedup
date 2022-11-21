@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.1
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.6.0
-	github.com/kmulvey/path v0.9.0
+	github.com/kmulvey/path v0.12.1
 	github.com/prometheus/client_golang v1.13.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
@@ -25,6 +25,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/goccy/go-yaml v1.9.5 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
