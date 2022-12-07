@@ -2,6 +2,7 @@ package hash
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -81,7 +82,11 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 		}
 
 		for i, hash := range m.Hashes {
-			c.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
+			if i < len(c.store) {
+				c.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
+			} else {
+				return nil, errors.New(fmt.Sprintf("number of hases: %d, does not match store size: %d, delete the cache file: %s", len(m.Hashes), numFiles, file))
+			}
 		}
 	}
 
