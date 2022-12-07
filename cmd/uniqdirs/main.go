@@ -57,7 +57,6 @@ func main() {
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
 	flag.BoolVar(&dedupFilePairs, "dedup-file-pairs", false, "dedup file pairs e.g. if a&b have been compared then dont comprare b&a as it will have the same result. doing this will reduce the time to diff but will also require more memory.")
-	flag.BoolVar(&help, "h", false, "print help")
 	flag.BoolVar(&help, "help", false, "print help")
 	flag.BoolVar(&v, "version", false, "print version")
 	flag.BoolVar(&v, "v", false, "print version")
@@ -119,7 +118,7 @@ func handleErr(prefix string, err error) {
 // dedupDir returns a bool representing 'continue' which is usually true except when an os signal is received, then false
 func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
 	// list all the files
-	var files, err = path.ListFilesWithFilter(dir, regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$"))
+	var files, err = path.ListFiles(dir, path.NewRegexFilesFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$")))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
