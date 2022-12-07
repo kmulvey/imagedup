@@ -81,9 +81,9 @@ func main() {
 	}
 
 	// list all the dirs
-	files, err := path.ListFiles(rootDir)
+	dirs, err := path.List(rootDir, path.NewDirListFilter())
 	handleErr("listFiles", err)
-	var dirNames = path.OnlyNames(path.OnlyDirs(files))
+	var dirNames = path.OnlyNames(dirs)
 	log.Infof("Found %d dirs", len(dirNames))
 
 	for _, dir := range dirNames {
@@ -117,7 +117,7 @@ func handleErr(prefix string, err error) {
 // dedupDir returns a bool representing 'continue' which is usually true except when an os signal is received, then false
 func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
 	// list all the files
-	var files, err = path.ListFiles(dir, path.NewRegexFilesFilter(imagedup.ImageExtensionRegex))
+	var files, err = path.List(dir, path.NewRegexListFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))

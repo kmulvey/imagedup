@@ -93,7 +93,7 @@ func main() {
 	}
 
 	// list all the files
-	var files, err = path.ListFiles(dir, path.NewRegexFilesFilter(imagedup.ImageExtensionRegex))
+	var files, err = path.List(dir, path.NewRegexListFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
