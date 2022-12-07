@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
@@ -94,7 +93,7 @@ func main() {
 	}
 
 	// list all the files
-	var files, err = path.ListFiles(dir, path.NewRegexFilesFilter(regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$.*.webm$")))
+	var files, err = path.ListFiles(dir, path.NewRegexFilesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))

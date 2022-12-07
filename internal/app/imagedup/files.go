@@ -3,9 +3,13 @@ package imagedup
 import (
 	"context"
 	"math"
+	"regexp"
 
 	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
 )
+
+// ImageExtensionRegex captures file extensions we can work with.
+var ImageExtensionRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$|.*.JPG$|.*.JPEG$|.*.PNG$|.*.WEBP$")
 
 // streamFiles generates roughly n^2 comparisons and writes them to a channel that
 // is read by the diff workers.
