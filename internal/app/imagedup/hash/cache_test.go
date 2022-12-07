@@ -19,9 +19,9 @@ func TestCache(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cache)
 
-	files, err := path.ListFiles("../testimages")
+	dirs, err := path.List("../testimages", path.NewFileListFilter())
 	assert.NoError(t, err)
-	var fileNames = path.OnlyNames(path.OnlyFiles(files))
+	var fileNames = path.OnlyNames(dirs)
 
 	for i, file := range fileNames {
 		_, err = cache.GetHash(i, file)
@@ -87,11 +87,11 @@ func BenchmarkGetHash(b *testing.B) {
 	var cache, err = NewCache(cacheFile, "glob", goutils.RandomString(5), 3)
 	assert.NoError(b, err)
 
-	files, err := path.ListFiles("../testimages")
+	dirs, err := path.List("../testimages", path.NewFileListFilter())
 	assert.NoError(b, err)
-	var fileNames = path.OnlyNames(path.OnlyFiles(files))
+	var fileNames = path.OnlyNames(dirs)
 
-	for i, file := range files {
+	for i, file := range dirs {
 		_, err = cache.GetHash(i, file.AbsolutePath)
 		assert.NoError(b, err)
 	}

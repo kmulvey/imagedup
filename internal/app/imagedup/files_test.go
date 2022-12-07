@@ -31,9 +31,8 @@ func TestStreamFiles(t *testing.T) {
 		close(done)
 	}()
 
-	files, err := path.ListFiles("./testimages")
+	files, err := path.List("./testimages", path.NewFileListFilter())
 	assert.NoError(t, err)
-	files = path.OnlyFiles(files)
 	var fileNames = path.OnlyNames(files)
 
 	id.streamFiles(context.Background(), fileNames)
@@ -65,9 +64,8 @@ func TestStreamFilesDedup(t *testing.T) {
 		close(done)
 	}()
 
-	files, err := path.ListFiles("./testimages")
+	files, err := path.List("./testimages", path.NewFileListFilter())
 	assert.NoError(t, err)
-	files = path.OnlyFiles(files)
 	var fileNames = path.OnlyNames(files)
 
 	id.streamFiles(context.Background(), fileNames)

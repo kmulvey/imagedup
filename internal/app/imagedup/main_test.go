@@ -22,9 +22,9 @@ func TestNewImageDup(t *testing.T) {
 	dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 3, 10, true)
 	assert.NoError(t, err)
 
-	files, err := path.ListFiles("./testimages")
+	dirs, err := path.List("./testimages", path.NewFileListFilter())
 	assert.NoError(t, err)
-	var fileNames = path.OnlyNames(path.OnlyFiles(files))
+	var fileNames = path.OnlyNames(dirs)
 
 	var results, errors = dup.Run(context.Background(), fileNames)
 	var done = make(chan struct{})
