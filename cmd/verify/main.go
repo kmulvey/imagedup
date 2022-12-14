@@ -27,7 +27,6 @@ func main() {
 	var help bool
 	flag.BoolVar(&alwaysDelete, "always-delete", false, "just take the larger one, always")
 	flag.Var(&deleteFiles, "delete-files", "log file where duplicate pairs are stored, same file from -cache-file when running nsquared")
-	flag.BoolVar(&help, "h", false, "print help")
 	flag.BoolVar(&help, "help", false, "print help")
 	flag.BoolVar(&v, "version", false, "print version")
 	flag.BoolVar(&v, "v", false, "print version")
