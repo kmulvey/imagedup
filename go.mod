@@ -3,7 +3,7 @@ module github.com/kmulvey/imagedup/v2
 go 1.19
 
 require (
-	github.com/RoaringBitmap/roaring v1.2.1
+	github.com/RoaringBitmap/roaring v1.2.2
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.6.0
 	github.com/kmulvey/path v0.14.2
