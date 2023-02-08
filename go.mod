@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.6.0
-	github.com/kmulvey/path v0.14.2
+	github.com/kmulvey/path v1.15.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
@@ -52,8 +52,8 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/exp v0.0.0-20221212164502-fae10dda9338 // indirect
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
