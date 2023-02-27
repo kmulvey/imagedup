@@ -9,7 +9,7 @@ require (
 	github.com/kmulvey/path v0.14.2
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	go.szostok.io/version v1.1.0
 )
 
