@@ -16,7 +16,6 @@ import (
 type Cache struct {
 	imageCacheHits   prometheus.Counter
 	imageCacheMisses prometheus.Counter
-	globPattern      string
 	storeFileName    string
 	store            []*Image
 	lock             sync.RWMutex
@@ -28,20 +27,12 @@ type Image struct {
 	image.Config `json:"-"`
 }
 
-// hashExportType is a stripped down type with just the necessary data which is intended to be
-// persisted to disk so we dont need to calculate the hash again.
-type hashExportType struct {
-	GlobPattern string
-	Hashes      []uint64
-}
-
 // NewCache reads the given file to rebuild its map from the last time it was run.
 // If the file does not exist, it will be created.
-func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, error) {
+func NewCache(file, promNamespace string, numFiles int) (*Cache, error) {
 	var c = new(Cache)
 	c.store = make([]*Image, numFiles)
 	c.storeFileName = file
-	c.globPattern = globPattern
 	c.imageCacheHits = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: promNamespace,
@@ -69,23 +60,15 @@ func NewCache(file, globPattern, promNamespace string, numFiles int) (*Cache, er
 	}
 
 	// load array from file
-	var m = new(hashExportType)
+	var m = make([]uint64, len(c.store))
 	err = json.NewDecoder(f).Decode(&m)
 	if err != nil {
 		return nil, fmt.Errorf("HashCache error decoding json file: %s, err: %w", file, err)
 	}
 
-	if len(m.Hashes) > 0 {
-		if globPattern != m.GlobPattern {
-			return nil, fmt.Errorf("Previous glob: '%s' from file: %s does not match new glob: '%s', please specify a new cache file", m.GlobPattern, file, globPattern)
-		}
-
-		for i, hash := range m.Hashes {
-			if i < len(c.store) {
-				c.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
-			} else {
-				return nil, fmt.Errorf("number of hases: %d, does not match store size: %d, delete the cache file: %s", len(m.Hashes), numFiles, file)
-			}
+	if len(m) > 0 {
+		for i, hash := range m {
+			c.store[i] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
 		}
 	}
 
@@ -167,11 +150,9 @@ func (c *Cache) Persist() error {
 
 	// dump map to file
 	c.lock.Lock()
-	var m = new(hashExportType)
-	m.GlobPattern = c.globPattern
-	m.Hashes = make([]uint64, len(c.store))
+	var m = make([]uint64, len(c.store))
 	for i, hash := range c.store {
-		m.Hashes[i] = hash.GetHash()
+		m[i] = hash.GetHash()
 	}
 	c.lock.Unlock()
 

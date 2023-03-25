@@ -36,7 +36,7 @@ func NewImageDup(promNamespace, hashCacheFile, globPattern string, numWorkers, n
 		id.dedupCache = make(map[string]struct{}, numFiles)
 	}
 
-	id.HashCache, err = hash.NewCache(hashCacheFile, globPattern, promNamespace, numFiles)
+	id.HashCache, err = hash.NewCache(hashCacheFile, promNamespace, numFiles)
 	if err != nil {
 		return nil, err
 	}
