@@ -50,9 +50,9 @@ func TestDiffer(t *testing.T) {
 		close(done)
 	}()
 
-	inputImages <- types.Pair{I: 0, One: "../testimages/iceland.jpg", J: 0, Two: "../testimages/iceland.jpg"}
-	inputImages <- types.Pair{I: 1, One: "../testimages/iceland-small.jpg", J: 0, Two: "../testimages/iceland.jpg"}
-	inputImages <- types.Pair{I: 1, One: "../testimages/iceland-small.jpg", J: 2, Two: "../testimages/trees.jpg"}
+	inputImages <- types.Pair{One: "../testimages/iceland.jpg", Two: "../testimages/iceland.jpg"}
+	inputImages <- types.Pair{One: "../testimages/iceland-small.jpg", Two: "../testimages/iceland.jpg"}
+	inputImages <- types.Pair{One: "../testimages/iceland-small.jpg", Two: "../testimages/trees.jpg"}
 	close(inputImages)
 
 	<-done

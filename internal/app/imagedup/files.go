@@ -33,7 +33,7 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 						id.bitmapLock.Lock()
 
 						if _, found := id.dedupCache[one+" "+two]; !found {
-							id.images <- types.Pair{One: one, Two: two, I: i, J: j}
+							id.images <- types.Pair{One: one, Two: two}
 							id.dedupCache[two+" "+one] = struct{}{} // we set the opposite pair so we skip it next time
 							id.stats.PairTotal.Inc()
 							id.stats.FileMapMisses.Inc()
@@ -42,7 +42,7 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 
 						id.bitmapLock.Unlock()
 					} else {
-						id.images <- types.Pair{One: one, Two: two, I: i, J: j}
+						id.images <- types.Pair{One: one, Two: two}
 						id.stats.PairTotal.Inc()
 					}
 				}
