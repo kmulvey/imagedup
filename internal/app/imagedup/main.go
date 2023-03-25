@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/kmulvey/imagedup/v2/internal/app/imagedup/hash"
 	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
 )
@@ -13,9 +12,9 @@ import (
 // ImageDup diffs images in order to find similar/duplicate images
 type ImageDup struct {
 	*stats
-	*hash.Cache
+	HashCache *hash.Cache
 	*hash.Differ
-	*roaring64.Bitmap
+	dedupCache map[string]struct{}
 	images     chan types.Pair
 	dedupPairs bool
 	bitmapLock sync.RWMutex
@@ -23,6 +22,7 @@ type ImageDup struct {
 
 // NewImageDup is the constructor which sets up everything for diffing but does not actually start diffing, Run() must be called for that.
 func NewImageDup(promNamespace, hashCacheFile, globPattern string, numWorkers, numFiles, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
+
 	if numFiles < 2 {
 		return nil, fmt.Errorf("Skipping %s because there are only %d files", globPattern, numFiles)
 	}
@@ -33,17 +33,17 @@ func NewImageDup(promNamespace, hashCacheFile, globPattern string, numWorkers, n
 	id.stats = newStats(promNamespace)
 	id.dedupPairs = dedupPairs
 	if dedupPairs {
-		id.Bitmap = roaring64.New()
+		id.dedupCache = make(map[string]struct{}, numFiles)
 	}
 
-	id.Cache, err = hash.NewCache(hashCacheFile, globPattern, promNamespace, numFiles)
+	id.HashCache, err = hash.NewCache(hashCacheFile, globPattern, promNamespace, numFiles)
 	if err != nil {
 		return nil, err
 	}
 
-	id.Differ = hash.NewDiffer(numWorkers, distanceThreshold, id.images, id.Cache, promNamespace)
+	id.Differ = hash.NewDiffer(numWorkers, distanceThreshold, id.images, id.HashCache, promNamespace)
 
-	go id.stats.publishStats(id.Cache, id.Bitmap, dedupPairs, &id.bitmapLock)
+	go id.stats.publishStats(id.HashCache, id.dedupCache, dedupPairs, &id.bitmapLock)
 
 	return id, nil
 }
@@ -60,5 +60,5 @@ func (id *ImageDup) Run(ctx context.Context, files []string) (chan hash.DiffResu
 func (id *ImageDup) Shutdown() error {
 	id.stats.unregister()
 	id.Differ.Shutdown()
-	return id.Cache.Persist()
+	return id.HashCache.Persist()
 }

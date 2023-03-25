@@ -32,9 +32,9 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 					if id.dedupPairs {
 						id.bitmapLock.Lock()
 
-						if found := id.Bitmap.Contains(compress(i, j)); !found {
+						if _, found := id.dedupCache[one+" "+two]; !found {
 							id.images <- types.Pair{One: one, Two: two, I: i, J: j}
-							id.Bitmap.Add(compress(j, i)) // we set the opposite pair so we skip it next time
+							id.dedupCache[two+" "+one] = struct{}{} // we set the opposite pair so we skip it next time
 							id.stats.PairTotal.Inc()
 							id.stats.FileMapMisses.Inc()
 						}
@@ -50,11 +50,4 @@ func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 		}
 	}
 	close(id.images)
-}
-
-// compress stores two ints in one. Go stores ints as 8 bytes so we store
-// the first int in the bottom four and the second in the top four.
-// This has a limitation of only being able to store a max value of 4294967295.
-func compress(a, b int) uint64 {
-	return uint64(a) | (uint64(b) << 32)
 }

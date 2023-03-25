@@ -4,8 +4,8 @@ import (
 	"runtime"
 	"sync"
 	"time"
+	"unsafe"
 
-	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/kmulvey/imagedup/v2/internal/app/imagedup/hash"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -115,7 +115,7 @@ func newStats(promNamespace string) *stats {
 }
 
 // publishStats publishes go GC stats + cache size to prom every 10 seconds
-func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap, dedupPairs bool, bitmapLock *sync.RWMutex) {
+func (s *stats) publishStats(imageCache *hash.Cache, dedupMap map[string]struct{}, dedupPairs bool, bitmapLock *sync.RWMutex) {
 	for {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
@@ -128,9 +128,8 @@ func (s *stats) publishStats(imageCache *hash.Cache, fileMap *roaring64.Bitmap, 
 
 		if dedupPairs {
 			bitmapLock.Lock()
-			s.FileMapEntries.Set(float64(fileMap.GetCardinality()))
-			var b, _ = fileMap.ToBytes()
-			s.FileMapBytes.Set(float64(len(b)))
+			s.FileMapEntries.Set(float64(len(dedupMap)))
+			s.FileMapBytes.Set(float64(unsafe.Sizeof(dedupMap)))
 			bitmapLock.Unlock()
 		}
 
