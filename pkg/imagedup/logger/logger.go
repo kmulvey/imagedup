@@ -35,7 +35,7 @@ func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 // NewDeleteLogger is a convience output logger for imagedup and is compatible with the verify tool.
 func NewDeleteLogger(filename string) (*logrus.Logger, error) {
-	var file, err = os.Create(filename)
+	var file, err = os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, fmt.Errorf("DeleteLogger could not open file: %s, err: %w", filename, err)
 	}
