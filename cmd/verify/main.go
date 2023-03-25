@@ -22,7 +22,7 @@ type pair struct {
 
 func main() {
 	var alwaysDelete bool
-	var deleteFiles path.Path
+	var deleteFiles path.Entry
 	var v bool
 	var help bool
 	flag.BoolVar(&alwaysDelete, "always-delete", false, "just take the larger one, always")
@@ -45,7 +45,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	for _, deleteFile := range deleteFiles.Files {
+	var files, err = deleteFiles.Flatten(true)
+	if err != nil {
+		log.Fatal(err)
+
+	}
+
+	for _, deleteFile := range files {
 		var file, err = os.Open(deleteFile.AbsolutePath)
 		if err != nil {
 			log.Fatal(err)

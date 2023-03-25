@@ -47,13 +47,11 @@ func main() {
 
 	// get user opts
 	var rootDir string
-	var threads int
-	var distanceThreshold int
-	var dedupFilePairs bool
-	var help bool
-	var v bool
+	var threads, distanceThreshold, depth int
+	var dedupFilePairs, help, v bool
 	flag.StringVar(&rootDir, "dir", "", "directory (abs path)")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
+	flag.IntVar(&depth, "depth", 2, "how far down the directory tree to search for files")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
 	flag.BoolVar(&dedupFilePairs, "dedup-file-pairs", false, "dedup file pairs e.g. if a&b have been compared then dont comprare b&a as it will have the same result. doing this will reduce the time to diff but will also require more memory.")
 	flag.BoolVar(&help, "help", false, "print help")
@@ -81,7 +79,7 @@ func main() {
 	}
 
 	// list all the dirs
-	dirs, err := path.List(rootDir, path.NewDirListFilter())
+	dirs, err := path.List(rootDir, uint8(depth), false, path.NewDirEntitiesFilter())
 	handleErr("listFiles", err)
 	var dirNames = path.OnlyNames(dirs)
 	log.Infof("Found %d dirs", len(dirNames))
@@ -90,7 +88,7 @@ func main() {
 		log.Infof("Starting %s", dir)
 
 		var ctx, cancel = context.WithCancel(context.Background())
-		if continueLoop := dedupDir(ctx, cancel, dir, threads, distanceThreshold, dedupFilePairs, gracefulShutdown); !continueLoop {
+		if continueLoop := dedupDir(ctx, cancel, dir, threads, distanceThreshold, depth, dedupFilePairs, gracefulShutdown); !continueLoop {
 			break
 		}
 
@@ -115,9 +113,9 @@ func handleErr(prefix string, err error) {
 }
 
 // dedupDir returns a bool representing 'continue' which is usually true except when an os signal is received, then false
-func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
+func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold, depth int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
 	// list all the files
-	var files, err = path.List(dir, path.NewRegexListFilter(imagedup.ImageExtensionRegex))
+	var files, err = path.List(dir, uint8(depth), false, path.NewRegexEntitiesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
@@ -129,7 +127,7 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 
 	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + ".log")
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", filepath.Base(dir)+".json", dir, threads, len(files), distanceThreshold, dedupFilePairs)
+	id, err := imagedup.NewImageDup("imagedup", filepath.Base(dir)+".json", threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)

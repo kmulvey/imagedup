@@ -48,18 +48,15 @@ func main() {
 	}()
 
 	// get user opts
-	var dir string
-	var cacheFile string
-	var outputFile string
-	var threads int
-	var distanceThreshold int
-	var dedupFilePairs bool
-	var help bool
-	var v bool
+	var dir, cacheFile, outputFile string
+	var threads, distanceThreshold, depth int
+	var dedupFilePairs, help, v bool
+
 	flag.StringVar(&dir, "dir", "", "directory (abs path)")
 	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes which be different for different input dirs")
 	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
+	flag.IntVar(&depth, "depth", 2, "how far down the directory tree to search for files")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
 	flag.BoolVar(&dedupFilePairs, "dedup-file-pairs", false, "dedup file pairs e.g. if a&b have been compared then dont comprare b&a as it will have the same result. doing this will reduce the time to diff but will also require more memory.")
 	flag.BoolVar(&help, "help", false, "print help")
@@ -93,7 +90,7 @@ func main() {
 	}
 
 	// list all the files
-	var files, err = path.List(dir, path.NewRegexListFilter(imagedup.ImageExtensionRegex))
+	var files, err = path.List(dir, uint8(depth), false, path.NewRegexEntitiesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
@@ -104,7 +101,7 @@ func main() {
 	// start er up
 	resultsLogger, err := logger.NewDeleteLogger(outputFile)
 	handleErr("NewImageDup", err)
-	id, err := imagedup.NewImageDup("imagedup", cacheFile, dir, threads, len(files), distanceThreshold, dedupFilePairs)
+	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
 	var results, errors = id.Run(ctx, fileNames)

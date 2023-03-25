@@ -15,14 +15,14 @@ func TestNewImageDup(t *testing.T) {
 
 	var cacheFile = "TestNewImageDup.json"
 
-	var dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 1, 10, true)
-	assert.Equal(t, "Skipping glob because there are only 1 files", err.Error())
+	var dup, err = NewImageDup("TestNewImageDup", cacheFile, 2, 1, 10, true)
+	assert.Equal(t, "Skipping because there are only 1 files", err.Error())
 	assert.Nil(t, dup)
 
-	dup, err = NewImageDup("TestNewImageDup", cacheFile, "glob", 2, 3, 10, true)
+	dup, err = NewImageDup("TestNewImageDup", cacheFile, 2, 3, 10, true)
 	assert.NoError(t, err)
 
-	dirs, err := path.List("./testimages", path.NewFileListFilter())
+	dirs, err := path.List("./testimages", 1, false, path.NewFileEntitiesFilter())
 	assert.NoError(t, err)
 	var fileNames = path.OnlyNames(dirs)
 

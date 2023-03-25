@@ -21,10 +21,10 @@ type ImageDup struct {
 }
 
 // NewImageDup is the constructor which sets up everything for diffing but does not actually start diffing, Run() must be called for that.
-func NewImageDup(promNamespace, hashCacheFile, globPattern string, numWorkers, numFiles, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
+func NewImageDup(promNamespace, hashCacheFile string, numWorkers, numFiles, distanceThreshold int, dedupPairs bool) (*ImageDup, error) {
 
 	if numFiles < 2 {
-		return nil, fmt.Errorf("Skipping %s because there are only %d files", globPattern, numFiles)
+		return nil, fmt.Errorf("Skipping because there are only %d files", numFiles)
 	}
 	var id = new(ImageDup)
 	var err error

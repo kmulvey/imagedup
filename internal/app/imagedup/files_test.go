@@ -3,6 +3,7 @@ package imagedup
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/kmulvey/path"
@@ -13,25 +14,25 @@ func TestStreamFiles(t *testing.T) {
 	t.Parallel()
 
 	var expectedPairs = map[string]struct{}{
-		"testimages/iceland-small.jpgtestimages/iceland.jpg": {},
-		"testimages/iceland-small.jpgtestimages/trees.jpg":   {},
-		"testimages/iceland.jpgtestimages/trees.jpg":         {},
+		"iceland-small.jpgiceland.jpg": {},
+		"iceland-small.jpgtrees.jpg":   {},
+		"iceland.jpgtrees.jpg":         {},
 	}
 	var cacheFile = "TestStreamFiles"
-	var id, err = NewImageDup("TestStreamFiles", cacheFile, "glob", 2, 3, 10, false)
+	var id, err = NewImageDup("TestStreamFiles", cacheFile, 2, 3, 10, false)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
 	go func() {
 		for img := range id.images {
-			delete(expectedPairs, img.One+img.Two)
+			delete(expectedPairs, filepath.Base(img.One)+filepath.Base(img.Two))
 		}
 		assert.Equal(t, 0, len(expectedPairs))
 
 		close(done)
 	}()
 
-	files, err := path.List("./testimages", path.NewFileListFilter())
+	files, err := path.List("./testimages", 1, false, path.NewFileEntitiesFilter())
 	assert.NoError(t, err)
 	var fileNames = path.OnlyNames(files)
 
@@ -46,25 +47,25 @@ func TestStreamFilesDedup(t *testing.T) {
 	t.Parallel()
 
 	var expectedPairs = map[string]struct{}{
-		"testimages/iceland-small.jpgtestimages/iceland.jpg": {},
-		"testimages/iceland-small.jpgtestimages/trees.jpg":   {},
-		"testimages/iceland.jpgtestimages/trees.jpg":         {},
+		"iceland-small.jpgiceland.jpg": {},
+		"iceland-small.jpgtrees.jpg":   {},
+		"iceland.jpgtrees.jpg":         {},
 	}
 	var cacheFile = "TestStreamFilesDedup"
-	var id, err = NewImageDup("TestStreamFilesDedup", cacheFile, "glob", 2, 3, 10, true)
+	var id, err = NewImageDup("TestStreamFilesDedup", cacheFile, 2, 3, 10, true)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
 	go func() {
 		for img := range id.images {
-			delete(expectedPairs, img.One+img.Two)
+			delete(expectedPairs, filepath.Base(img.One)+filepath.Base(img.Two))
 		}
 		assert.Equal(t, 0, len(expectedPairs))
 
 		close(done)
 	}()
 
-	files, err := path.List("./testimages", path.NewFileListFilter())
+	files, err := path.List("./testimages", 1, false, path.NewFileEntitiesFilter())
 	assert.NoError(t, err)
 	var fileNames = path.OnlyNames(files)
 
@@ -79,7 +80,7 @@ func TestStreamFilesCancel(t *testing.T) {
 	t.Parallel()
 
 	var cacheFile = "TestStreamFiles"
-	var id, err = NewImageDup("TestStreamFilesCancel", cacheFile, "glob", 2, 3, 10, true)
+	var id, err = NewImageDup("TestStreamFilesCancel", cacheFile, 2, 3, 10, true)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
