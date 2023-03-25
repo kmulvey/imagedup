@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DeleteLogFormatter is a custome sirupsen/logrus logger to format output pairs as json
+// DeleteLogFormatter is a custom sirupsen/logrus logger to format output pairs as json
 type DeleteLogFormatter struct{}
 
 func (f *DeleteLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
@@ -50,17 +50,7 @@ func NewDeleteLogger(filename string) (*logrus.Logger, error) {
 // LogResults drains the results channel and logs the results in a json file.
 func LogResults(resultsLogger *logrus.Logger, results chan hash.DiffResult) {
 	for result := range results {
-		if result.OneArea > result.TwoArea {
-			resultsLogger.WithFields(log.Fields{
-				"big":   result.One,
-				"small": result.Two,
-			}).Info("delete")
-		} else {
-			resultsLogger.WithFields(log.Fields{
-				"big":   result.Two,
-				"small": result.One,
-			}).Info("delete")
-		}
+		LogResult(resultsLogger, result)
 	}
 }
 
