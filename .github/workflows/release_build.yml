@@ -23,10 +23,8 @@ jobs:
 
       - name: Build & Test
         run: |
-          ls -al
-          go mod tidy
           go clean
-          ls -al
+          go mod tidy
           go build -v -ldflags="-s -w" ./...
           go test -v -race -count 1 -parallel 5 -covermode=atomic -coverprofile=coverage.out ./...
 
