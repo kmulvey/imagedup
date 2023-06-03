@@ -49,7 +49,7 @@ func NewCache(cacheFileName, promNamespace string, numFiles int) (*Cache, error)
 	prometheus.MustRegister(c.imageCacheMisses)
 
 	// try to open the file, if it doesnt exist, create it
-	var f, err = os.OpenFile(cacheFileName, os.O_RDWR|os.O_CREATE, 0755)
+	var f, err = os.OpenFile(cacheFileName, os.O_RDONLY|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", cacheFileName, err)
 	}
