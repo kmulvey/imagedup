@@ -53,6 +53,14 @@ func NewCache(cacheFileName, promNamespace string, numFiles int) (*Cache, error)
 	if err != nil {
 		return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", cacheFileName, err)
 	}
+
+	defer func() {
+		_ = f.Close() // hard to bubble this error in a defer
+		// if err != nil {
+		// 	return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", cacheFileName, err)
+		// }
+	}()
+
 	if info, err := f.Stat(); err != nil {
 		return c, fmt.Errorf("HashCache error stating file: %s, err: %w", cacheFileName, err)
 	} else if info.Size() == 0 {
@@ -70,11 +78,6 @@ func NewCache(cacheFileName, promNamespace string, numFiles int) (*Cache, error)
 		for imageName, hash := range m {
 			c.store[imageName] = &Image{goimagehash.NewImageHash(hash, goimagehash.PHash), image.Config{}}
 		}
-	}
-
-	err = f.Close()
-	if err != nil {
-		return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", cacheFileName, err)
 	}
 
 	return c, nil
