@@ -22,6 +22,8 @@ import (
 	"go.szostok.io/version/printer"
 )
 
+var logExt = ".log"
+
 func main() {
 	var start = time.Now()
 
@@ -93,12 +95,12 @@ func main() {
 		}
 
 		// delete emptys
-		var logFile, err = os.Stat(filepath.Base(dir) + ".log")
+		var logFile, err = os.Stat(filepath.Base(dir) + logExt)
 		if err != nil {
 			continue
 		}
 		if logFile.Size() == 0 {
-			err = os.RemoveAll(filepath.Base(dir) + ".log")
+			err = os.RemoveAll(filepath.Base(dir) + logExt)
 			handleErr("remove log file", err)
 		}
 	}
@@ -125,7 +127,7 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 	}
 	// start er up
 
-	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + ".log")
+	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + logExt)
 	handleErr("NewImageDup", err)
 	id, err := imagedup.NewImageDup("imagedup", filepath.Base(dir)+".json", threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
