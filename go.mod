@@ -1,6 +1,6 @@
 module github.com/kmulvey/imagedup/v2
 
-go 1.21
+go 1.22.1
 
 require (
 	github.com/corona10/goimagehash v1.1.0
