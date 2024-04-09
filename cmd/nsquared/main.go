@@ -122,7 +122,10 @@ CollectionLoop:
 					results = nil
 					continue
 				}
-				resultsLogger.LogResult(result)
+				if err := resultsLogger.LogResult(result); err != nil {
+					log.Error(err)
+				}
+
 			case err, open := <-errors:
 				if !open {
 					errors = nil

@@ -147,7 +147,10 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 					results = nil
 					continue
 				}
-				resultsLogger.LogResult(result)
+				if err := resultsLogger.LogResult(result); err != nil {
+					log.Error(err)
+				}
+
 			case err, open := <-errors:
 				if !open {
 					errors = nil
