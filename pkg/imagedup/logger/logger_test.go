@@ -18,20 +18,22 @@ func TestCustomLogger(t *testing.T) {
 	assert.NoError(t, err)
 
 	// one is bigger
-	logger.LogResult(hash.DiffResult{
+	err = logger.LogResult(hash.DiffResult{
 		One:     "fileone",
 		Two:     "filetwo",
 		OneArea: 20,
 		TwoArea: 10,
 	})
+	assert.NoError(t, err)
 
 	// two is bigger
-	logger.LogResult(hash.DiffResult{
+	err = logger.LogResult(hash.DiffResult{
 		One:     "fileone",
 		Two:     "filetwo",
 		OneArea: 10,
 		TwoArea: 20,
 	})
+	assert.NoError(t, err)
 	assert.NoError(t, logger.Close())
 
 	deletes, err := ReadDeleteLogFile(filename)

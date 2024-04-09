@@ -38,7 +38,10 @@ func NewDeleteLogger(filename string) (*DeleteLogger, error) {
 	}
 
 	// write the header
-	file.WriteString("[")
+	_, err = file.WriteString("[")
+	if err != nil {
+		return nil, fmt.Errorf("DeleteLogger could not write the leading [ to the file: %s, err: %w", filename, err)
+	}
 
 	return &DeleteLogger{FileName: filename, LogFile: file, FirstEntry: true}, nil
 }
@@ -60,7 +63,7 @@ func ReadDeleteLogFile(filename string) ([]DeleteEntry, error) {
 	return entries, nil
 }
 
-// LogResult logs a single duplicate result as json. Each record is writted to disk immediatly as to not use too much RAM.
+// LogResult logs a single duplicate result as json. Each record is writted to disk immediately as to not use too much RAM.
 func (dl *DeleteLogger) LogResult(result hash.DiffResult) error {
 	var entry DeleteEntry
 
