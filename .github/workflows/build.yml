@@ -1,4 +1,4 @@
-name: ImageDup
+name: Build
 
 on: push
 
@@ -42,28 +42,3 @@ jobs:
 
       - name: Govulncheck
         uses: kmulvey/govulncheck-action@v1.2.0
-
-  release:
-    name: ImageDup release
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # See: https://goreleaser.com/ci/actions/
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          check-latest: true
-          cache: true
-          go-version: "1.22"
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: latest
-          args: release --config .goreleaser.yaml --clean --snapshot
-        env:
-          GITHUB_TOKEN: ${{ secrets.GO_RELEASER_GITHUB_TOKEN }}
