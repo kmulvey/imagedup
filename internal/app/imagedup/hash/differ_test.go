@@ -57,6 +57,7 @@ func TestDiffer(t *testing.T) {
 
 	<-done
 
+	differ.Shutdown()
 	err = os.RemoveAll(cacheFile)
 	assert.NoError(t, err)
 }
