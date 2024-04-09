@@ -10,11 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type logFormatType struct {
-	Big   string
-	Small string
-}
-
 func TestCustomLogger(t *testing.T) {
 	t.Parallel()
 
@@ -33,7 +28,7 @@ func TestCustomLogger(t *testing.T) {
 	content, err := os.ReadFile(filename)
 	assert.NoError(t, err)
 
-	var result logFormatType
+	var result DeleteEntry
 	assert.NoError(t, json.Unmarshal(content, &result))
 
 	assert.Equal(t, "fileone", result.Big)
