@@ -4,8 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"encoding/json"
-
 	"github.com/kmulvey/imagedup/v2/internal/app/imagedup/hash"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,10 +12,12 @@ func TestCustomLogger(t *testing.T) {
 	t.Parallel()
 
 	var filename = "TestCustomLogger.json"
+	assert.NoError(t, os.RemoveAll(filename)) // defensive
 
 	var logger, err = NewDeleteLogger(filename)
 	assert.NoError(t, err)
 
+	// one is bigger
 	logger.LogResult(hash.DiffResult{
 		One:     "fileone",
 		Two:     "filetwo",
@@ -25,15 +25,24 @@ func TestCustomLogger(t *testing.T) {
 		TwoArea: 10,
 	})
 
-	content, err := os.ReadFile(filename)
-	assert.NoError(t, err)
-
-	var result DeleteEntry
-	assert.NoError(t, json.Unmarshal(content, &result))
-
-	assert.Equal(t, "fileone", result.Big)
-	assert.Equal(t, "filetwo", result.Small)
-
+	// two is bigger
+	logger.LogResult(hash.DiffResult{
+		One:     "fileone",
+		Two:     "filetwo",
+		OneArea: 10,
+		TwoArea: 20,
+	})
 	assert.NoError(t, logger.Close())
+
+	deletes, err := ReadDeleteLogFile(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(deletes))
+
+	assert.Equal(t, "fileone", deletes[0].Big)
+	assert.Equal(t, "filetwo", deletes[0].Small)
+
+	assert.Equal(t, "fileone", deletes[1].Small)
+	assert.Equal(t, "filetwo", deletes[1].Big)
+
 	assert.NoError(t, os.RemoveAll(filename))
 }

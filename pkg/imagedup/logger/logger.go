@@ -10,7 +10,9 @@ import (
 
 // DeleteLogger logs the duplicate file pairs and can read with the verify tool.
 type DeleteLogger struct {
-	LogFile *os.File
+	FileName   string
+	LogFile    *os.File
+	FirstEntry bool // used to tell if we should write a ',' after the entry
 }
 
 // DeleteEntry is a duplicate file pair
@@ -38,7 +40,7 @@ func NewDeleteLogger(filename string) (*DeleteLogger, error) {
 	// write the header
 	file.WriteString("[")
 
-	return &DeleteLogger{LogFile: file}, nil
+	return &DeleteLogger{FileName: filename, LogFile: file, FirstEntry: true}, nil
 }
 
 // ReadDeleteLogFile reads the entire file and returns a slice of DeleteEntries.
@@ -58,7 +60,7 @@ func ReadDeleteLogFile(filename string) ([]DeleteEntry, error) {
 	return entries, nil
 }
 
-// LogResult logs a single duplicate result as json.
+// LogResult logs a single duplicate result as json. Each record is writted to disk immediatly as to not use too much RAM.
 func (dl *DeleteLogger) LogResult(result hash.DiffResult) error {
 	var entry DeleteEntry
 
@@ -76,14 +78,36 @@ func (dl *DeleteLogger) LogResult(result hash.DiffResult) error {
 
 	var js, err = json.Marshal(entry)
 	if err != nil {
-		return fmt.Errorf("DeleteLogger could not marshal DiffResult json, err: %w", err)
+		return fmt.Errorf("DeleteLogger could not marshal DiffResult json, file: %s, err: %w", dl.FileName, err)
 	}
+
+	if !dl.FirstEntry {
+		_, err = dl.LogFile.WriteString(",")
+		if err != nil {
+			return fmt.Errorf("DeleteLogger could not write the comma, file: %s, err: %w", dl.FileName, err)
+		}
+	}
+
 	_, err = dl.LogFile.Write(js)
-	return err
+	if err != nil {
+		return fmt.Errorf("DeleteLogger could not write the JSON to the file: %s, err: %w", dl.FileName, err)
+	}
+
+	dl.FirstEntry = false
+	return nil
 }
 
-// Close writes the trailing ] and closes the log file
+// Close writes the trailing ] and closes the log file.
 func (dl *DeleteLogger) Close() error {
-	dl.LogFile.WriteString("]")
-	return dl.LogFile.Close()
+	var _, err = dl.LogFile.WriteString("]")
+	if err != nil {
+		return fmt.Errorf("DeleteLogger could not write the trailing ] to the file: %s, err: %w", dl.FileName, err)
+	}
+
+	err = dl.LogFile.Close()
+	if err != nil {
+		return fmt.Errorf("DeleteLogger could not close the file: %s, err: %w", dl.FileName, err)
+	}
+
+	return nil
 }
