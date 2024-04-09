@@ -18,7 +18,7 @@ type DeleteLogger struct {
 	Logrus  *logrus.Logger
 }
 
-// Format is a custom Logrus formatter that satisifes the Format interface
+// Format is a custom Logrus formatter that satisfies the Format interface
 func (f *DeleteLogger) Format(entry *logrus.Entry) ([]byte, error) {
 	var buf = new(bytes.Buffer)
 	buf.WriteString(fmt.Sprintf("\n%s: %s		", "big", entry.Data["big"].(string)))
