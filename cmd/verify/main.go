@@ -1,24 +1,18 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
 
+	"github.com/kmulvey/imagedup/v2/pkg/imagedup/logger"
 	"github.com/kmulvey/path"
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
 	"go.szostok.io/version/printer"
 )
-
-type pair struct {
-	Big   string
-	Small string
-}
 
 func main() {
 	var alwaysDelete bool
@@ -52,30 +46,29 @@ func main() {
 	}
 
 	for _, deleteFile := range files {
-		var file, err = os.Open(deleteFile.AbsolutePath)
+
+		var dedupedFiles, err = logger.ReadDeleteLogFile(deleteFile.AbsolutePath)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		var dedupedFiles = dedupFile(file)
-		for i, p := range dedupedFiles {
+		for i, pair := range dedupedFiles {
 
 			// we could has already deleted one of them, so just go around
-			if !fileExists(p.Small) {
-				fmt.Println(p.Small, " already deleted")
+			if !fileExists(pair.Small) {
+				fmt.Println(pair.Small, " already deleted")
 				continue
 			}
-			if !fileExists(p.Big) {
-				fmt.Println(p.Big, " already deleted")
+			if !fileExists(pair.Big) {
+				fmt.Println(pair.Big, " already deleted")
 				continue
 			}
 
 			if alwaysDelete {
-				err = os.Remove(p.Small)
-				if err != nil {
+				if err := os.Remove(pair.Small); err != nil {
 					log.Fatal(err)
 				}
-				fmt.Println("deleted", p.Small)
+				fmt.Println("deleted", pair.Small)
 				continue
 			}
 
@@ -91,28 +84,25 @@ func main() {
 				log.Fatalf("unsupported os: %s", goos)
 			}
 			// open both images with image viewer
-			cmd := exec.Command(viewerCmd, p.Big)
-			err = cmd.Start()
-			if err != nil {
+			cmdBig := exec.Command(viewerCmd, pair.Big)
+			if err := cmdBig.Start(); err != nil {
 				log.Fatal(err)
 			}
 
-			cmdS := exec.Command(viewerCmd, p.Small)
-			err = cmdS.Run()
-			if err != nil {
+			cmdSmall := exec.Command(viewerCmd, pair.Small)
+			if err := cmdSmall.Start(); err != nil {
 				log.Fatal(err)
 			}
 
 			// ask the user if we should delete
 			var del string
-			fmt.Printf("[%d/%d]	delete: %s ?", i+1, len(dedupedFiles), p.Small)
+			fmt.Printf("[%d/%d]	delete: %s ?", i+1, len(dedupedFiles), pair.Small)
 			fmt.Scanln(&del)
 			if del == "y" {
-				err = os.Remove(p.Small)
-				if err != nil {
+				if err := os.Remove(pair.Small); err != nil {
 					log.Fatal(err)
 				}
-				fmt.Println("deleted", p.Small)
+				fmt.Println("deleted", pair.Small)
 			}
 		}
 	}
@@ -120,34 +110,6 @@ func main() {
 
 // fileExists returns true if the file exists
 func fileExists(fileName string) bool {
-	if _, err := os.Stat(fileName); err == nil {
-		return true
-	}
-	return false
-}
-
-// dedupFile takes the output of imagedup and creates a unique list of pairs. ImageDup can
-// return duplicated if is not run with -dedup-file-pairs
-func dedupFile(file *os.File) []pair {
-	var scanner = bufio.NewScanner(file)
-	var imagePairs []pair
-
-FileLoop:
-	for scanner.Scan() {
-		var filePair pair
-		var err = json.Unmarshal(scanner.Bytes(), &filePair)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for _, p := range imagePairs {
-			if filePair.Big == p.Big && filePair.Small == p.Small ||
-				filePair.Big == p.Small && filePair.Small == p.Big {
-				continue FileLoop
-			}
-		}
-		imagePairs = append(imagePairs, filePair)
-	}
-
-	return imagePairs
+	_, err := os.Stat(fileName)
+	return err == nil
 }
