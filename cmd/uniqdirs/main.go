@@ -73,8 +73,8 @@ func main() {
 		}
 		os.Exit(0)
 	}
-	if strings.TrimSpace(rootDir) == "" {
-		log.Fatal("directory not provided")
+	if _, err := os.Stat(strings.TrimSpace(rootDir)); err != nil {
+		log.Fatalf("directory %s is not valid, err :%s \n", rootDir, err.Error())
 	}
 	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
 		threads = 1
@@ -83,6 +83,7 @@ func main() {
 	// list all the dirs
 	dirs, err := path.List(rootDir, uint8(depth), false, path.NewDirEntitiesFilter())
 	handleErr("listFiles", err)
+
 	var dirNames = path.OnlyNames(dirs)
 	log.Infof("Found %d dirs", len(dirNames))
 
@@ -116,19 +117,22 @@ func handleErr(prefix string, err error) {
 
 // dedupDir returns a bool representing 'continue' which is usually true except when an os signal is received, then false
 func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold, depth int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
+
 	// list all the files
 	var files, err = path.List(dir, uint8(depth), false, path.NewRegexEntitiesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
+
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
 	if len(files) < 2 {
 		log.Infof("Skipping %s because there are only %d files", dir, len(files))
 		return true
 	}
-	// start er up
 
+	// start er up
 	resultsLogger, err := logger.NewDeleteLogger(filepath.Base(dir) + logExt)
 	handleErr("NewImageDup", err)
+
 	id, err := imagedup.NewImageDup("imagedup", filepath.Base(dir)+".json", threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
@@ -167,6 +171,7 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 	if err != nil {
 		log.Fatal("error shutting down", err)
 	}
+	resultsLogger.Close()
 
 	return true
 }

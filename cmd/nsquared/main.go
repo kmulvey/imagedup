@@ -54,7 +54,7 @@ func main() {
 
 	flag.StringVar(&dir, "dir", "", "directory (abs path)")
 	flag.StringVar(&cacheFile, "cache-file", "cache.json", "json file to store the image hashes which be different for different input dirs")
-	flag.StringVar(&outputFile, "output-file", "delete.log", "log file to store the duplicate pairs")
+	flag.StringVar(&outputFile, "output-file", "delete.json", "json file to store the duplicate pairs, it will be deleted and recreated")
 	flag.IntVar(&threads, "threads", 1, "number of threads to use, >1 only useful when rebuilding the cache")
 	flag.IntVar(&depth, "depth", 2, "how far down the directory tree to search for files")
 	flag.IntVar(&distanceThreshold, "distance", 10, "max distance for images to be considered the same")
@@ -76,8 +76,8 @@ func main() {
 		}
 		os.Exit(0)
 	}
-	if strings.TrimSpace(dir) == "" {
-		log.Fatal("directory not provided")
+	if _, err := os.Stat(strings.TrimSpace(dir)); err != nil {
+		log.Fatalf("directory %s is not valid, err :%s \n", dir, err.Error())
 	}
 	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
 		threads = 1
@@ -85,13 +85,14 @@ func main() {
 	if filepath.Ext(cacheFile) != ".json" {
 		log.Fatal("cache file must have extension .json")
 	}
-	if filepath.Ext(outputFile) != ".log" {
-		log.Fatal("output file must have extension .log")
+	if filepath.Ext(outputFile) != ".json" {
+		log.Fatal("output file must have extension .json")
 	}
 
 	// list all the files
 	var files, err = path.List(dir, uint8(depth), false, path.NewRegexEntitiesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
+
 	var fileNames = path.OnlyNames(files)
 	log.Infof("Found %d files", len(files))
 	if len(files) < 2 {
@@ -101,6 +102,7 @@ func main() {
 	// start er up
 	resultsLogger, err := logger.NewDeleteLogger(outputFile)
 	handleErr("NewImageDup", err)
+
 	id, err := imagedup.NewImageDup("imagedup", cacheFile, threads, len(files), distanceThreshold, dedupFilePairs)
 	handleErr("NewImageDup", err)
 
@@ -143,7 +145,7 @@ CollectionLoop:
 	if err != nil {
 		log.Fatal("error shutting down", err)
 	}
-
+	resultsLogger.Close()
 	log.Info("Total time taken: ", time.Since(start))
 }
 
