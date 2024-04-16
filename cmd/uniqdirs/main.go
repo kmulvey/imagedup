@@ -167,8 +167,7 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 
 	// shut everything down
 	cancel()
-	err = id.Shutdown()
-	if err != nil {
+	if err := id.Shutdown(); err != nil {
 		log.Fatal("error shutting down", err)
 	}
 	resultsLogger.Close()
