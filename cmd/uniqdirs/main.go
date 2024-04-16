@@ -22,7 +22,7 @@ import (
 	"go.szostok.io/version/printer"
 )
 
-var logExt = ".log"
+var logExt = "-delete.json"
 
 func main() {
 	var start = time.Now()
