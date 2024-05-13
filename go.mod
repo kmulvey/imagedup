@@ -4,7 +4,7 @@ go 1.22.2
 
 require (
 	github.com/corona10/goimagehash v1.1.0
-	github.com/kmulvey/goutils v0.6.0
+	github.com/kmulvey/goutils v0.7.0
 	github.com/kmulvey/path v1.21.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/sirupsen/logrus v1.9.3
