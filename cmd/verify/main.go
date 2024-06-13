@@ -97,7 +97,9 @@ func main() {
 			// ask the user if we should delete
 			var del string
 			fmt.Printf("[%d/%d]	delete: %s ?", i+1, len(dedupedFiles), pair.Small)
-			fmt.Scanln(&del)
+			if _, err := fmt.Scanln(&del); err != nil {
+				log.Fatal(err)
+			}
 			if del == "y" {
 				if err := os.Remove(pair.Small); err != nil {
 					log.Fatal(err)
