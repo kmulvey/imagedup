@@ -42,8 +42,8 @@ github.com/huandu/xstrings v1.4.0 h1:D17IlohoQq4UcpqD7fDk80P7l+lwAmlFaBHgOipl2FU
 github.com/huandu/xstrings v1.4.0/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
 github.com/imdario/mergo v0.3.16 h1:wwQJbIsHYGMUyLSPrEq1CT16AhnhNJQ51+4fdHUnCl4=
 github.com/imdario/mergo v0.3.16/go.mod h1:WBLT9ZmE3lPoWsEzCh9LPo3TiwVN+ZKEjmz+hD27ysY=
-github.com/kmulvey/goutils v0.6.0 h1:N3ZW0f9jf0lzXE7/LeDNw1jBDHiKnvX89/D9F37h/lU=
-github.com/kmulvey/goutils v0.6.0/go.mod h1:piD3FiBNFCOGTorRV2yFpjOUQFXVO5IiCHx0Nmmom8g=
+github.com/kmulvey/goutils v0.8.0 h1:Pnh61sqWtuK4WkYLNiwVLnRcQ++/CjtTw5JMvK0PGqA=
+github.com/kmulvey/goutils v0.8.0/go.mod h1:247v0tdQ+1AHQMH8NhKGqMcaUS09nQpSBmBb6na9mFM=
 github.com/kmulvey/path v1.22.0 h1:i4S+KBKeqvHdU9VGUNQAv+a/U6i1HhocHnvVzvBKANI=
 github.com/kmulvey/path v1.22.0/go.mod h1:wYDK4vhhMakyqVxcKxt7lj9OWP+vYPE99A/99aF/JNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
