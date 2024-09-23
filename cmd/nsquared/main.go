@@ -90,6 +90,7 @@ func main() {
 	}
 
 	// list all the files
+	//nolint:gosec
 	var files, err = path.List(dir, uint8(depth), false, path.NewRegexEntitiesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 

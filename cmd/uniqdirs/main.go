@@ -81,6 +81,7 @@ func main() {
 	}
 
 	// list all the dirs
+	//nolint:gosec
 	dirs, err := path.List(rootDir, uint8(depth), false, path.NewDirEntitiesFilter())
 	handleErr("listFiles", err)
 
@@ -119,6 +120,7 @@ func handleErr(prefix string, err error) {
 func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, threads, distanceThreshold, depth int, dedupFilePairs bool, gracefulShutdown chan os.Signal) bool {
 
 	// list all the files
+	//nolint:gosec
 	var files, err = path.List(dir, uint8(depth), false, path.NewRegexEntitiesFilter(imagedup.ImageExtensionRegex))
 	handleErr("listFiles", err)
 
