@@ -1,10 +1,9 @@
 module github.com/kmulvey/imagedup/v2
 
 go 1.23.1
-
 require (
 	github.com/corona10/goimagehash v1.1.0
-	github.com/kmulvey/goutils v0.8.0
+	github.com/kmulvey/goutils v0.9.0
 	github.com/kmulvey/path v1.22.0
 	github.com/prometheus/client_golang v1.20.4
 	github.com/sirupsen/logrus v1.9.3
