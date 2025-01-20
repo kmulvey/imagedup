@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/kmulvey/imagedup/v2/pkg/imagedup/logger"
 	"github.com/kmulvey/path"
@@ -61,6 +62,10 @@ func main() {
 			}
 			if !fileExists(pair.Big) {
 				fmt.Println(pair.Big, " already deleted")
+				continue
+			}
+			if strings.HasSuffix(pair.Small, "-small.jpg") {
+				fmt.Println(pair.Small, " skiped small")
 				continue
 			}
 
