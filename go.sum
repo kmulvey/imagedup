@@ -41,8 +41,8 @@ github.com/huandu/xstrings v1.5.0 h1:2ag3IFq9ZDANvthTwTiqSSZLjDc+BedvHPAp5tJy2TI
 github.com/huandu/xstrings v1.5.0/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
 github.com/klauspost/compress v1.17.11 h1:In6xLpyWOi1+C7tXUUWv2ot1QvBjxevKAaI6IXrJmUc=
 github.com/klauspost/compress v1.17.11/go.mod h1:pMDklpSncoRMuLFrf1W9Ss9KT+0rH90U12bZKk7uwG0=
-github.com/kmulvey/goutils v0.9.0 h1:av10cTGJonQdO5SZpOtzoKafl1bl2lq3xFbaP+egEdI=
-github.com/kmulvey/goutils v0.9.0/go.mod h1:O8Oknqw5XvI6TOfimNgrWXvB3DmRXtw00MKD78TedMA=
+github.com/kmulvey/goutils v0.10.0 h1:DMylfliRx5RL7Hz6u6vdnesU3V9KXrlqJA8tdzO9BH8=
+github.com/kmulvey/goutils v0.10.0/go.mod h1:qD70z0WlKw9hjoi+qB3Q2ObjpRT9FQ5L5bW5k8CObd8=
 github.com/kmulvey/path v1.22.0 h1:i4S+KBKeqvHdU9VGUNQAv+a/U6i1HhocHnvVzvBKANI=
 github.com/kmulvey/path v1.22.0/go.mod h1:wYDK4vhhMakyqVxcKxt7lj9OWP+vYPE99A/99aF/JNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
