@@ -46,6 +46,8 @@ func main() {
 
 	}
 
+	var screenWidth, screenHeight = screenWidth()
+
 	for _, deleteFile := range files {
 
 		var dedupedFiles, err = logger.ReadDeleteLogFile(deleteFile.AbsolutePath)
@@ -65,7 +67,7 @@ func main() {
 				continue
 			}
 			if strings.HasSuffix(pair.Small, "-small.jpg") {
-				fmt.Println(pair.Small, " skiped small")
+				fmt.Println(pair.Small, " skipped small")
 				continue
 			}
 
@@ -89,14 +91,14 @@ func main() {
 				log.Fatalf("unsupported os: %s", goos)
 			}
 			// open both images with image viewer
-			cmdBig := exec.Command(viewerCmd, pair.Big)
-			if err := cmdBig.Start(); err != nil {
-				log.Fatal(err)
+			largeImageProcess, err := openImage(viewerCmd, pair.Big, "left", screenWidth, screenHeight)
+			if err != nil {
+				log.Fatal("error opening large image ", err)
 			}
 
-			cmdSmall := exec.Command(viewerCmd, pair.Small)
-			if err := cmdSmall.Start(); err != nil {
-				log.Fatal(err)
+			smallImageProcess, err := openImage(viewerCmd, pair.Small, "right", screenWidth, screenHeight)
+			if err != nil {
+				log.Fatal("error opening small image ", err)
 			}
 
 			// ask the user if we should delete
@@ -105,11 +107,19 @@ func main() {
 			if _, err := fmt.Scanln(&del); err != nil {
 				log.Fatal(err)
 			}
-			if del == "y" {
+			if strings.TrimSpace(del) == "y" {
 				if err := os.Remove(pair.Small); err != nil {
 					log.Fatal(err)
 				}
 				fmt.Println("deleted", pair.Small)
+			}
+
+			// close the viewer
+			if err := closeImage(largeImageProcess); err != nil {
+				log.Fatal("error closing large image: ", err)
+			}
+			if err := closeImage(smallImageProcess); err != nil {
+				log.Fatal("error closing small image: ", err)
 			}
 		}
 	}
@@ -119,4 +129,60 @@ func main() {
 func fileExists(fileName string) bool {
 	_, err := os.Stat(fileName)
 	return err == nil
+}
+
+func screenWidth() (int, int) {
+	// Get screen width (using xrandr to get the screen size)
+	screenWidthCmd := exec.Command("xrandr")
+	output, err := screenWidthCmd.Output()
+	if err != nil {
+		log.Fatal("error getting screen dimensions ", err)
+	}
+
+	// Find the screen width by parsing the xrandr output (assuming first * indicates active screen)
+	var screenWidth, screenHeight int
+	if _, err := fmt.Sscanf(string(output), "* %dx%d", &screenWidth, &screenHeight); err != nil {
+		log.Fatal(err)
+	}
+
+	return screenWidth, screenHeight
+}
+
+func openImage(viewerCmd, imagePath, orientation string, screenWidth, screenHeight int) (*exec.Cmd, error) {
+	imageProcess := exec.Command(viewerCmd, imagePath)
+	if err := imageProcess.Start(); err != nil {
+		return imageProcess, fmt.Errorf("error opening image %s, err: %w", imagePath, err)
+	}
+
+	// Calculate 1/4 of the screen width for each window
+	// quarterWidth := screenWidth / 4
+	// halfHeight := screenHeight / 2
+
+	// if orientation == "left" {
+	//	// Move the first window to the left quarter of the screen
+	//	resizeProcess := exec.Command("wmctrl", "-r", "Eye of GNOME", "-e", fmt.Sprintf("0,0,0,%d,%d", quarterWidth, screenHeight))
+	//	if err := resizeProcess.Run(); err != nil {
+	//		return imageProcess, fmt.Errorf("error resizing image %s, err: %w", imagePath, err)
+	//	}
+	// } else {
+	//	resizeProcess := exec.Command("wmctrl", "-r", "Eye of GNOME", "-e", fmt.Sprintf("0,%d,0,%d,%d", quarterWidth*3, screenHeight, quarterWidth))
+	//	if err := resizeProcess.Run(); err != nil {
+	//		return imageProcess, fmt.Errorf("error resizing image %s, err: %w", imagePath, err)
+	//	}
+	// }
+
+	return imageProcess, nil
+}
+
+func closeImage(process *exec.Cmd) error {
+	if err := process.Process.Kill(); err != nil {
+		return err
+	}
+
+	if err := process.Wait(); err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			return err
+		}
+	}
+	return nil
 }
