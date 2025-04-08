@@ -6,7 +6,7 @@ require (
 	github.com/corona10/goimagehash v1.1.0
 	github.com/kmulvey/goutils v0.10.0
 	github.com/kmulvey/path v1.22.0
-	github.com/prometheus/client_golang v1.21.1
+	github.com/prometheus/client_golang v1.22.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	go.szostok.io/version v1.2.0
@@ -32,7 +32,6 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
-	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
