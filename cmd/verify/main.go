@@ -42,7 +42,7 @@ func main() {
 
 	var files, err = deleteFiles.Flatten(true)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("error flattening files: ", err)
 
 	}
 
@@ -52,7 +52,7 @@ func main() {
 
 		var dedupedFiles, err = logger.ReadDeleteLogFile(deleteFile.AbsolutePath)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("error reading file: %s, err: %s", deleteFile.AbsolutePath, err)
 		}
 
 		for i, pair := range dedupedFiles {
@@ -73,7 +73,7 @@ func main() {
 
 			if alwaysDelete {
 				if err := os.Remove(pair.Small); err != nil {
-					log.Fatal(err)
+					log.Fatalf("unable to remove file: %s, err: %s", pair.Small, err)
 				}
 				fmt.Println("deleted", pair.Small)
 				continue
@@ -105,7 +105,7 @@ func main() {
 			var del string
 			fmt.Printf("[%d/%d]	delete: %s ?", i+1, len(dedupedFiles), pair.Small)
 			if _, err := fmt.Scanln(&del); err != nil {
-				log.Fatal(err)
+				log.Fatalf("unale to read delete input: %s, err: %s", del, err)
 			}
 			if strings.TrimSpace(del) == "y" {
 				if err := os.Remove(pair.Small); err != nil {
@@ -141,8 +141,14 @@ func screenWidth() (int, int) {
 
 	// Find the screen width by parsing the xrandr output (assuming first * indicates active screen)
 	var screenWidth, screenHeight int
-	if _, err := fmt.Sscanf(string(output), "* %dx%d", &screenWidth, &screenHeight); err != nil {
-		log.Fatal(err)
+	lines := strings.Split(string(output), "\n")
+	var doesntMatter int
+	if len(lines) > 0 {
+		if _, err := fmt.Sscanf(strings.TrimSpace(lines[0]), "Screen %d: minimum %d x %d, current %d x %d, maximum %d x %d", &doesntMatter, &doesntMatter, &doesntMatter, &screenWidth, &screenHeight, &doesntMatter, &doesntMatter); err != nil {
+			log.Fatal("error parsing xrandr output ", err)
+		}
+	} else {
+		log.Fatal("xrandr output is empty")
 	}
 
 	return screenWidth, screenHeight
