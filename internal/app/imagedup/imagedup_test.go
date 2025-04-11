@@ -1,9 +1,7 @@
 package imagedup
 
 import (
-	"context"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/kmulvey/path"
@@ -26,7 +24,7 @@ func TestNewImageDup(t *testing.T) {
 	assert.NoError(t, err)
 	var fileNames = path.OnlyNames(dirs)
 
-	var results, errors = dup.Run(context.Background(), fileNames)
+	var results, errors = dup.Run(t.Context(), fileNames)
 	var done = make(chan struct{})
 
 	go func() {
@@ -44,11 +42,10 @@ func TestNewImageDup(t *testing.T) {
 					results = nil
 					continue
 				}
-				assert.True(t, strings.Contains(diff.One, "iceland"))
+				assert.Contains(t, diff.One, "iceland")
 				i++
 			}
 		}
-		assert.Equal(t, i, i)
 		close(done)
 	}()
 
