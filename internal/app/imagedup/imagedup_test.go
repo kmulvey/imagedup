@@ -16,7 +16,7 @@ func TestNewImageDup(t *testing.T) {
 	var cacheFile = "TestNewImageDup.json"
 
 	var dup, err = NewImageDup("TestNewImageDup", cacheFile, 2, 1, 10, true)
-	assert.Equal(t, "Skipping because there are only 1 files", err.Error())
+	assert.Equal(t, "insufficient files to process: only 1 files provided", err.Error())
 	assert.Nil(t, dup)
 
 	dup, err = NewImageDup("TestNewImageDup", cacheFile, 2, 3, 10, true)
