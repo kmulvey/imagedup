@@ -10,16 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStreamFiles(t *testing.T) {
-	t.Parallel()
+func testStreamFilesHelper(t *testing.T, cacheFile string, dedupPairs bool, expectedPairs map[string]struct{}) {
+	t.Helper()
 
-	var expectedPairs = map[string]struct{}{
-		"iceland-small.jpgiceland.jpg": {},
-		"iceland-small.jpgtrees.jpg":   {},
-		"iceland.jpgtrees.jpg":         {},
-	}
-	var cacheFile = "TestStreamFiles"
-	var id, err = NewImageDup("TestStreamFiles", cacheFile, 2, 3, 10, false)
+	var id, err = NewImageDup(cacheFile, cacheFile, 2, 3, 10, dedupPairs)
 	assert.NoError(t, err)
 
 	var done = make(chan struct{})
@@ -27,7 +21,7 @@ func TestStreamFiles(t *testing.T) {
 		for img := range id.images {
 			delete(expectedPairs, filepath.Base(img.One)+filepath.Base(img.Two))
 		}
-		assert.Equal(t, 0, len(expectedPairs))
+		assert.Empty(t, expectedPairs)
 
 		close(done)
 	}()
@@ -36,11 +30,22 @@ func TestStreamFiles(t *testing.T) {
 	assert.NoError(t, err)
 	var fileNames = path.OnlyNames(files)
 
-	id.streamFiles(context.Background(), fileNames)
+	id.streamFiles(t.Context(), fileNames)
 
 	<-done
 
 	assert.NoError(t, os.RemoveAll(cacheFile))
+}
+
+func TestStreamFiles(t *testing.T) {
+	t.Parallel()
+
+	var expectedPairs = map[string]struct{}{
+		"iceland-small.jpgiceland.jpg": {},
+		"iceland-small.jpgtrees.jpg":   {},
+		"iceland.jpgtrees.jpg":         {},
+	}
+	testStreamFilesHelper(t, "TestStreamFiles", false, expectedPairs)
 }
 
 func TestStreamFilesDedup(t *testing.T) {
@@ -51,29 +56,7 @@ func TestStreamFilesDedup(t *testing.T) {
 		"iceland-small.jpgtrees.jpg":   {},
 		"iceland.jpgtrees.jpg":         {},
 	}
-	var cacheFile = "TestStreamFilesDedup"
-	var id, err = NewImageDup("TestStreamFilesDedup", cacheFile, 2, 3, 10, true)
-	assert.NoError(t, err)
-
-	var done = make(chan struct{})
-	go func() {
-		for img := range id.images {
-			delete(expectedPairs, filepath.Base(img.One)+filepath.Base(img.Two))
-		}
-		assert.Equal(t, 0, len(expectedPairs))
-
-		close(done)
-	}()
-
-	files, err := path.List("./testimages", 1, false, path.NewFileEntitiesFilter())
-	assert.NoError(t, err)
-	var fileNames = path.OnlyNames(files)
-
-	id.streamFiles(context.Background(), fileNames)
-
-	<-done
-
-	assert.NoError(t, os.RemoveAll(cacheFile))
+	testStreamFilesHelper(t, "TestStreamFilesDedup", true, expectedPairs)
 }
 
 func TestStreamFilesCancel(t *testing.T) {
@@ -89,12 +72,12 @@ func TestStreamFilesCancel(t *testing.T) {
 		for range id.images {
 			numImages++
 		}
-		assert.True(t, numImages < 100) // kind of arbitrary, it basically just needs to be small
+		assert.Less(t, numImages, 100) // kind of arbitrary, it basically just needs to be small
 
 		close(done)
 	}()
 
-	var ctx, cancel = context.WithCancel(context.Background())
+	var ctx, cancel = context.WithCancel(t.Context())
 	go id.streamFiles(ctx, make([]string, 100))
 	cancel()
 
