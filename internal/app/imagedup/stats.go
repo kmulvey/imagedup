@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// stats are prometheus stats for imagedup
+// stats are prometheus stats for imagedup.
 type stats struct {
 	PairTotal           prometheus.Counter
 	GCTime              prometheus.Gauge
@@ -25,7 +25,8 @@ type stats struct {
 	PromNamespace       string
 }
 
-// newStats inits all the stats
+// newStats inits all the stats.
+// nolint: funlen
 func newStats(promNamespace string) *stats {
 	var s = new(stats)
 	s.PromNamespace = promNamespace
@@ -114,7 +115,7 @@ func newStats(promNamespace string) *stats {
 	return s
 }
 
-// publishStats publishes go GC stats + cache size to prom every 10 seconds
+// publishStats publishes go GC stats + cache size to prom every 10 seconds.
 func (s *stats) publishStats(imageCache *hash.Cache, dedupMap map[string]struct{}, dedupPairs bool, bitmapLock *sync.RWMutex) {
 	for {
 		var stats runtime.MemStats
@@ -137,7 +138,7 @@ func (s *stats) publishStats(imageCache *hash.Cache, dedupMap map[string]struct{
 	}
 }
 
-// unregister removes all the stats
+// unregister removes all the stats.
 func (s *stats) unregister() {
 	prometheus.Unregister(s.PairTotal)
 	prometheus.Unregister(s.GCTime)
