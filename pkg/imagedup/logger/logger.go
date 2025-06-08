@@ -15,10 +15,10 @@ type DeleteLogger struct {
 	FirstEntry bool // used to tell if we should write a ',' after the entry
 }
 
-// DeleteEntry is a duplicate file pair
+// DeleteEntry is a duplicate file pair.
 type DeleteEntry struct {
-	Big   string
-	Small string
+	Big   string `json:"big"`
+	Small string `json:"small"`
 }
 
 // NewDeleteLogger creates a new DeleteLogger and deletes the log file if it already exists.
