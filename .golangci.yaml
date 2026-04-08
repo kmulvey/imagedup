@@ -54,4 +54,9 @@ linters:
       checks:
         - "all"
         - "-QF1008" # allow explicit embedded field names in selectors for readability
+    forbidigo:
+      # allow fmt.Print* in command-line tools under cmd/ where plain printing is intended
+      exclude-rules:
+        - path: "^cmd/"
+          text: "fmt\\.(Print|Printf|Println)"
 

@@ -3,7 +3,6 @@ package hash
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
@@ -40,9 +39,9 @@ func TestDiffer(t *testing.T) {
 					results = nil
 					continue
 				}
-				assert.True(t, strings.Contains(diff.One, "iceland"))
-				assert.False(t, strings.Contains(diff.One, "trees"))
-				assert.False(t, strings.Contains(diff.Two, "trees"))
+				assert.Contains(t, diff.One, "iceland")
+				assert.NotContains(t, diff.One, "trees")
+				assert.NotContains(t, diff.Two, "trees")
 				i++
 			}
 		}

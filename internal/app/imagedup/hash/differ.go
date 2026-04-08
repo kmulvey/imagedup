@@ -70,7 +70,7 @@ func (d *Differ) Run(ctx context.Context) (chan DiffResult, chan error) {
 	var errorChans = make([]chan error, d.numWorkers)
 	var resultChans = make([]chan DiffResult, d.numWorkers)
 
-	for i := 0; i < d.numWorkers; i++ {
+	for i := range d.numWorkers {
 		var errors = make(chan error)
 		var results = make(chan DiffResult)
 		errorChans[i] = errors

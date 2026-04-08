@@ -1,3 +1,5 @@
+// Package logger contains simple loggers used to record duplicate image
+// pairs and read them back for verification tools.
 package logger
 
 import (
@@ -32,7 +34,9 @@ func NewDeleteLogger(filename string) (*DeleteLogger, error) {
 		}
 	}
 
-	var file, err = os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+	// #nosec G304: filename is provided by caller and used as a local
+	// delete-log file for the CLI; opening/creating it is intended.
+	var file, err = os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("DeleteLogger could not open file: %s, err: %w", filename, err)
 	}
@@ -49,6 +53,7 @@ func NewDeleteLogger(filename string) (*DeleteLogger, error) {
 // ReadDeleteLogFile reads the entire file and returns a slice of DeleteEntries.
 func ReadDeleteLogFile(filename string) ([]DeleteEntry, error) {
 
+	// #nosec G304: filename is provided by caller and points to a local log file
 	var content, err = os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("DeleteLogger could not open file: %s, err: %w", filename, err)
@@ -79,7 +84,7 @@ func (dl *DeleteLogger) LogResult(result hash.DiffResult) error {
 		}
 	}
 
-	var js, err = json.Marshal(entry)
+	js, err := json.Marshal(entry)
 	if err != nil {
 		return fmt.Errorf("DeleteLogger could not marshal DiffResult json, file: %s, err: %w", dl.FileName, err)
 	}
