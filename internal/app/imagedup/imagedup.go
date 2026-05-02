@@ -1,3 +1,5 @@
+// Package imagedup contains the top-level ImageDup type and helpers used to
+// coordinate hashing, diffing and statistics for finding duplicate images.
 package imagedup
 
 import (
@@ -16,8 +18,9 @@ var ErrInsufficientFiles = errors.New("insufficient files to process")
 // ImageDup diffs images in order to find similar/duplicate images.
 type ImageDup struct {
 	*stats
-	HashCache *hash.Cache
 	*hash.Differ
+
+	HashCache  *hash.Cache
 	dedupCache map[string]struct{}
 	images     chan types.Pair
 	dedupPairs bool

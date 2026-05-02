@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -13,6 +14,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.szostok.io/version"
 	"go.szostok.io/version/printer"
+)
+
+// ErrUnsupportedViewer is returned when an unsupported image viewer command is requested.
+var ErrUnsupportedViewer = errors.New("unsupported viewer command")
+
+const (
+	viewerPreview = "preview"
+	viewerEOG     = "eog"
 )
 
 func main() {
@@ -43,85 +52,98 @@ func main() {
 	var files, err = deleteFiles.Flatten(true)
 	if err != nil {
 		log.Fatal("error flattening files: ", err)
-
 	}
 
-	var screenWidth, screenHeight = screenWidth()
-
 	for _, deleteFile := range files {
+		processDeleteFile(deleteFile.AbsolutePath, alwaysDelete)
+	}
+}
 
-		var dedupedFiles, err = logger.ReadDeleteLogFile(deleteFile.AbsolutePath)
-		if err != nil {
-			log.Fatalf("error reading file: %s, err: %s", deleteFile.AbsolutePath, err)
+// processDeleteFile loads a log file and processes every duplicate pair in it.
+func processDeleteFile(path string, alwaysDelete bool) {
+	var dedupedFiles, err = logger.ReadDeleteLogFile(path)
+	if err != nil {
+		log.Fatalf("error reading file: %s, err: %s", path, err)
+	}
+
+	var viewer = viewerForOS()
+
+	for i, pair := range dedupedFiles {
+		processPair(i, len(dedupedFiles), pair, alwaysDelete, viewer)
+	}
+}
+
+// viewerForOS returns the image viewer command for the current OS.
+func viewerForOS() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return viewerPreview
+	case "linux":
+		return viewerEOG // eog -- GNOME Image Viewer 41.1
+	case "windows":
+		return ""
+	default:
+		log.Fatalf("unsupported os: %s", runtime.GOOS)
+		return ""
+	}
+}
+
+// processPair handles a single duplicate pair: skip, auto-delete, or interactive review.
+func processPair(idx, total int, pair logger.DeleteEntry, alwaysDelete bool, viewer string) {
+	// skip pairs that have already been handled
+	if !fileExists(pair.Small) {
+		log.Infof("%s already deleted", pair.Small)
+		return
+	}
+	if !fileExists(pair.Big) {
+		log.Infof("%s already deleted", pair.Big)
+		return
+	}
+	if strings.HasSuffix(pair.Small, "-small.jpg") {
+		log.Infof("%s skipped small", pair.Small)
+		return
+	}
+
+	if alwaysDelete {
+		if err := os.Remove(pair.Small); err != nil {
+			log.Fatalf("unable to remove file: %s, err: %s", pair.Small, err)
 		}
+		log.Infof("deleted %s", pair.Small)
+		return
+	}
 
-		for i, pair := range dedupedFiles {
+	reviewPairInteractive(idx, total, pair, viewer)
+}
 
-			// we could has already deleted one of them, so just go around
-			if !fileExists(pair.Small) {
-				fmt.Println(pair.Small, " already deleted")
-				continue
-			}
-			if !fileExists(pair.Big) {
-				fmt.Println(pair.Big, " already deleted")
-				continue
-			}
-			if strings.HasSuffix(pair.Small, "-small.jpg") {
-				fmt.Println(pair.Small, " skipped small")
-				continue
-			}
+// reviewPairInteractive opens both images in a viewer and asks the user whether to delete.
+func reviewPairInteractive(idx, total int, pair logger.DeleteEntry, viewer string) {
+	largeImageProcess, err := openImage(viewer, pair.Big)
+	if err != nil {
+		log.Fatal("error opening large image ", err)
+	}
 
-			if alwaysDelete {
-				if err := os.Remove(pair.Small); err != nil {
-					log.Fatalf("unable to remove file: %s, err: %s", pair.Small, err)
-				}
-				fmt.Println("deleted", pair.Small)
-				continue
-			}
+	smallImageProcess, err := openImage(viewer, pair.Small)
+	if err != nil {
+		log.Fatal("error opening small image ", err)
+	}
 
-			var viewerCmd string
-			var goos = runtime.GOOS
-			switch goos {
-			case "windows":
-			case "darwin":
-				viewerCmd = "preview"
-			case "linux":
-				viewerCmd = "eog" // eog -- GNOME Image Viewer 41.1
-			default:
-				log.Fatalf("unsupported os: %s", goos)
-			}
-			// open both images with image viewer
-			largeImageProcess, err := openImage(viewerCmd, pair.Big, "left", screenWidth, screenHeight)
-			if err != nil {
-				log.Fatal("error opening large image ", err)
-			}
-
-			smallImageProcess, err := openImage(viewerCmd, pair.Small, "right", screenWidth, screenHeight)
-			if err != nil {
-				log.Fatal("error opening small image ", err)
-			}
-
-			// ask the user if we should delete
-			var del string
-			fmt.Printf("[%d/%d]	delete: %s ?", i+1, len(dedupedFiles), pair.Small)
-			if _, err := fmt.Scanln(&del); err != nil {
-				log.Fatalf("unale to read delete input: %s, err: %s", del, err)
-			}
-			if strings.TrimSpace(del) == "y" {
-				if err := os.Remove(pair.Small); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println("deleted", pair.Small)
-			}
-
-			// close the viewer
-			if err := closeImage(largeImageProcess); err != nil {
-				log.Fatal("error closing large image: ", err)
-			}
-			if err := closeImage(smallImageProcess); err != nil {
-				log.Fatal("error closing small image: ", err)
-			}
+	var del string
+	log.Infof("[%d/%d]\tdelete: %s ?", idx+1, total, pair.Small)
+	if _, err := fmt.Scanln(&del); err != nil {
+		log.Fatalf("unable to read delete input: %s, err: %s", del, err)
+	}
+	if strings.TrimSpace(del) == "y" {
+		if err := os.Remove(pair.Small); err != nil {
+			log.Fatal(err)
 		}
+		log.Infof("deleted %s", pair.Small)
+	}
+
+	if err := closeImage(largeImageProcess); err != nil {
+		log.Fatal("error closing large image: ", err)
+	}
+	if err := closeImage(smallImageProcess); err != nil {
+		log.Fatal("error closing small image: ", err)
 	}
 }
 
@@ -131,63 +153,45 @@ func fileExists(fileName string) bool {
 	return err == nil
 }
 
-func screenWidth() (int, int) {
-	// Get screen width (using xrandr to get the screen size)
-	screenWidthCmd := exec.Command("xrandr")
-	output, err := screenWidthCmd.Output()
-	if err != nil {
-		log.Fatal("error getting screen dimensions ", err)
+func openImage(viewerCmd, imagePath string) (*exec.Cmd, error) {
+	// Validate viewerCmd against an allow-list to avoid launching arbitrary subprocesses.
+	switch viewerCmd {
+	case viewerPreview, viewerEOG:
+		// allowed
+	default:
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedViewer, viewerCmd)
 	}
 
-	// Find the screen width by parsing the xrandr output (assuming first * indicates active screen)
-	var screenWidth, screenHeight int
-	lines := strings.Split(string(output), "\n")
-	var doesntMatter int
-	if len(lines) > 0 {
-		if _, err := fmt.Sscanf(strings.TrimSpace(lines[0]), "Screen %d: minimum %d x %d, current %d x %d, maximum %d x %d", &doesntMatter, &doesntMatter, &doesntMatter, &screenWidth, &screenHeight, &doesntMatter, &doesntMatter); err != nil {
-			log.Fatal("error parsing xrandr output ", err)
-		}
-	} else {
-		log.Fatal("xrandr output is empty")
+	var imageProcess *exec.Cmd
+	switch viewerCmd {
+	case viewerPreview:
+		// #nosec G204: imagePath is user-provided but comes from program arguments
+		// intended for local CLI use; launching a trusted viewer is expected.
+		imageProcess = exec.Command(viewerPreview, imagePath)
+	case viewerEOG:
+		// #nosec G204: imagePath is user-provided but comes from program arguments
+		// intended for local CLI use; launching a trusted viewer is expected.
+		imageProcess = exec.Command(viewerEOG, imagePath)
+	default:
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedViewer, viewerCmd)
 	}
 
-	return screenWidth, screenHeight
-}
-
-func openImage(viewerCmd, imagePath, orientation string, screenWidth, screenHeight int) (*exec.Cmd, error) {
-	imageProcess := exec.Command(viewerCmd, imagePath)
 	if err := imageProcess.Start(); err != nil {
 		return imageProcess, fmt.Errorf("error opening image %s, err: %w", imagePath, err)
 	}
-
-	// Calculate 1/4 of the screen width for each window
-	// quarterWidth := screenWidth / 4
-	// halfHeight := screenHeight / 2
-
-	// if orientation == "left" {
-	//	// Move the first window to the left quarter of the screen
-	//	resizeProcess := exec.Command("wmctrl", "-r", "Eye of GNOME", "-e", fmt.Sprintf("0,0,0,%d,%d", quarterWidth, screenHeight))
-	//	if err := resizeProcess.Run(); err != nil {
-	//		return imageProcess, fmt.Errorf("error resizing image %s, err: %w", imagePath, err)
-	//	}
-	// } else {
-	//	resizeProcess := exec.Command("wmctrl", "-r", "Eye of GNOME", "-e", fmt.Sprintf("0,%d,0,%d,%d", quarterWidth*3, screenHeight, quarterWidth))
-	//	if err := resizeProcess.Run(); err != nil {
-	//		return imageProcess, fmt.Errorf("error resizing image %s, err: %w", imagePath, err)
-	//	}
-	// }
 
 	return imageProcess, nil
 }
 
 func closeImage(process *exec.Cmd) error {
 	if err := process.Process.Kill(); err != nil {
-		return err
+		return fmt.Errorf("error killing process: %w", err)
 	}
 
 	if err := process.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			return err
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			return fmt.Errorf("error waiting for process: %w", err)
 		}
 	}
 	return nil

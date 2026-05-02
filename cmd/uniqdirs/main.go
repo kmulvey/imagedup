@@ -35,7 +35,25 @@ func main() {
 	var gracefulShutdown = make(chan os.Signal, 1)
 	signal.Notify(gracefulShutdown, os.Interrupt, syscall.SIGTERM)
 
-	// prom
+	startPrometheusServer()
+
+	rootDir, threads, distanceThreshold, depth, dedupFilePairs := parseFlags()
+
+	// list all the dirs
+	//nolint:gosec
+	dirs, err := path.List(rootDir, uint8(depth), false, path.NewDirEntitiesFilter())
+	handleErr("listFiles", err)
+
+	var dirNames = path.OnlyNames(dirs)
+	log.Infof("Found %d dirs", len(dirNames))
+
+	processDirs(dirNames, threads, distanceThreshold, depth, dedupFilePairs, gracefulShutdown)
+
+	log.Info("Total time taken: ", time.Since(start))
+}
+
+// startPrometheusServer starts the prom metrics HTTP server in the background.
+func startPrometheusServer() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		s := &http.Server{
@@ -46,8 +64,11 @@ func main() {
 		}
 		log.Fatal(s.ListenAndServe())
 	}()
+}
 
-	// get user opts
+// parseFlags parses CLI flags, handles --help/--version, validates inputs and
+// returns the resolved configuration values.
+func parseFlags() (string, int, int, int, bool) {
 	var rootDir string
 	var threads, distanceThreshold, depth int
 	var dedupFilePairs, help, v bool
@@ -79,15 +100,11 @@ func main() {
 	if threads <= 0 || threads > runtime.GOMAXPROCS(0) {
 		threads = 1
 	}
+	return rootDir, threads, distanceThreshold, depth, dedupFilePairs
+}
 
-	// list all the dirs
-	//nolint:gosec
-	dirs, err := path.List(rootDir, uint8(depth), false, path.NewDirEntitiesFilter())
-	handleErr("listFiles", err)
-
-	var dirNames = path.OnlyNames(dirs)
-	log.Infof("Found %d dirs", len(dirNames))
-
+// processDirs iterates over discovered directories and deduplicates each one.
+func processDirs(dirNames []string, threads, distanceThreshold, depth int, dedupFilePairs bool, gracefulShutdown chan os.Signal) {
 	for _, dir := range dirNames {
 		log.Infof("Starting %s", dir)
 
@@ -96,7 +113,7 @@ func main() {
 			break
 		}
 
-		// delete emptys
+		// delete empty log files
 		var logFile, err = os.Stat(filepath.Base(dir) + logExt)
 		if err != nil {
 			continue
@@ -106,7 +123,6 @@ func main() {
 			handleErr("remove log file", err)
 		}
 	}
-	log.Info("Total time taken: ", time.Since(start))
 }
 
 // handleErr is a convience func to log and quit errors, all errors in this app are considered fatal
@@ -172,7 +188,9 @@ func dedupDir(ctx context.Context, cancel context.CancelFunc, dir string, thread
 	if err := id.Shutdown(); err != nil {
 		log.Fatal("error shutting down", err)
 	}
-	resultsLogger.Close()
+	if err := resultsLogger.Close(); err != nil {
+		log.Error(err)
+	}
 
 	return true
 }

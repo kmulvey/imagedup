@@ -38,7 +38,7 @@ func TestCustomLogger(t *testing.T) {
 
 	deletes, err := ReadDeleteLogFile(filename)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(deletes))
+	assert.Len(t, deletes, 2)
 
 	assert.Equal(t, "fileone", deletes[0].Big)
 	assert.Equal(t, "filetwo", deletes[0].Small)

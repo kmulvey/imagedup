@@ -2,7 +2,6 @@ package imagedup
 
 import (
 	"context"
-	"math"
 	"regexp"
 
 	"github.com/kmulvey/imagedup/v2/pkg/imagedup/types"
@@ -16,9 +15,9 @@ var ImageExtensionRegex = regexp.MustCompile(".*.jpg$|.*.jpeg$|.*.png$|.*.webp$|
 func (id *ImageDup) streamFiles(ctx context.Context, files []string) {
 	var numImages = float64(len(files))
 	if id.dedupPairs {
-		id.stats.TotalComparisons.Set((math.Pow(numImages, 2) - numImages) / 2)
+		id.stats.TotalComparisons.Set(((numImages * numImages) - numImages) / 2)
 	} else {
-		id.stats.TotalComparisons.Set((math.Pow(numImages, 2) - numImages))
+		id.stats.TotalComparisons.Set(((numImages * numImages) - numImages))
 	}
 
 	for i, one := range files {

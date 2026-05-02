@@ -1,3 +1,5 @@
+// Package hash implements caching and hashing helpers used by the imagedup
+// application to compute and persist image hashes for later comparisons.
 package hash
 
 import (
@@ -49,7 +51,9 @@ func NewCache(cacheFileName, promNamespace string, numFiles int) (*Cache, error)
 	prometheus.MustRegister(c.imageCacheMisses)
 
 	// try to open the file, if it doesnt exist, create it
-	var f, err = os.OpenFile(cacheFileName, os.O_RDONLY|os.O_CREATE, 0755)
+	// #nosec G304: cacheFileName is provided by caller and expected to be a local
+	// cache file path for this CLI tool; opening it is intended behavior.
+	var f, err = os.OpenFile(cacheFileName, os.O_RDONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", cacheFileName, err)
 	}
@@ -102,45 +106,47 @@ func (c *Cache) GetHash(fileName string) (*Image, error) {
 	if imgData != nil {
 		c.imageCacheHits.Inc()
 		return imgData, nil
-	} else {
-		c.imageCacheMisses.Inc()
-		var imgCache = new(Image)
-
-		var fileHandle, err = os.Open(fileName)
-		if err != nil {
-			return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", fileName, err)
-		}
-
-		img, err := jpeg.Decode(fileHandle)
-		if err != nil {
-			return nil, fmt.Errorf("HashCache error decoding jpeg file: %s, err: %w", fileName, err)
-		}
-
-		imgCache.ImageHash, err = goimagehash.PerceptionHash(img)
-		if err != nil {
-			return nil, fmt.Errorf("HashCache error calculating hash for file: %s, err: %w", fileName, err)
-		}
-
-		_, err = fileHandle.Seek(0, 0) // reset file reader
-		if err != nil {
-			return nil, fmt.Errorf("HashCache error rewinding file: %s, err: %w", fileName, err)
-		}
-
-		imgCache.Config, err = jpeg.DecodeConfig(fileHandle)
-		if err != nil {
-			return nil, fmt.Errorf("HashCache error decoding jpeg config file: %s, err: %w", fileName, err)
-		}
-
-		c.lock.Lock()
-		c.store[fileName] = imgCache
-		c.lock.Unlock()
-
-		if err = fileHandle.Close(); err != nil {
-			return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", fileName, err)
-		}
-
-		return imgCache, nil
 	}
+
+	c.imageCacheMisses.Inc()
+	var imgCache = new(Image)
+
+	// #nosec G304: fileName is provided by caller and represents image path
+	// intended for local filesystem access in a CLI tool.
+	var fileHandle, err = os.Open(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("HashCache error opening file: %s, err: %w", fileName, err)
+	}
+
+	img, err := jpeg.Decode(fileHandle)
+	if err != nil {
+		return nil, fmt.Errorf("HashCache error decoding jpeg file: %s, err: %w", fileName, err)
+	}
+
+	imgCache.ImageHash, err = goimagehash.PerceptionHash(img)
+	if err != nil {
+		return nil, fmt.Errorf("HashCache error calculating hash for file: %s, err: %w", fileName, err)
+	}
+
+	_, err = fileHandle.Seek(0, 0) // reset file reader
+	if err != nil {
+		return nil, fmt.Errorf("HashCache error rewinding file: %s, err: %w", fileName, err)
+	}
+
+	imgCache.Config, err = jpeg.DecodeConfig(fileHandle)
+	if err != nil {
+		return nil, fmt.Errorf("HashCache error decoding jpeg config file: %s, err: %w", fileName, err)
+	}
+
+	c.lock.Lock()
+	c.store[fileName] = imgCache
+	c.lock.Unlock()
+
+	if err = fileHandle.Close(); err != nil {
+		return nil, fmt.Errorf("HashCache error closing file: %s, err: %w", fileName, err)
+	}
+
+	return imgCache, nil
 }
 
 // Persist writes the cache to disk

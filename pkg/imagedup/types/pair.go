@@ -1,3 +1,4 @@
+// Package types holds small types shared across the imagedup project.
 package types
 
 // Pair represents two images, their paths and their element # in the files list
