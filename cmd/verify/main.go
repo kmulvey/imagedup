@@ -92,15 +92,15 @@ func viewerForOS() string {
 func processPair(idx, total int, pair logger.DeleteEntry, alwaysDelete bool, viewer string) {
 	// skip pairs that have already been handled
 	if !fileExists(pair.Small) {
-		log.Infof("%s already deleted", pair.Small)
+		fmt.Printf("%s already deleted", pair.Small)
 		return
 	}
 	if !fileExists(pair.Big) {
-		log.Infof("%s already deleted", pair.Big)
+		fmt.Printf("%s already deleted", pair.Big)
 		return
 	}
 	if strings.HasSuffix(pair.Small, "-small.jpg") {
-		log.Infof("%s skipped small", pair.Small)
+		fmt.Printf("%s skipped small", pair.Small)
 		return
 	}
 
@@ -128,7 +128,7 @@ func reviewPairInteractive(idx, total int, pair logger.DeleteEntry, viewer strin
 	}
 
 	var del string
-	log.Infof("[%d/%d]\tdelete: %s ?", idx+1, total, pair.Small)
+	fmt.Printf("[%d/%d]\tdelete: %s ? ", idx+1, total, pair.Small)
 	if _, err := fmt.Scanln(&del); err != nil {
 		log.Fatalf("unable to read delete input: %s, err: %s", del, err)
 	}
