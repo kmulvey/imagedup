@@ -55,3 +55,8 @@ linters:
       checks:
         - "all"
         - "-QF1008" # allow explicit embedded field names in selectors for readability
+  exclusions:
+    rules:
+      - path: ^cmd/
+        linters:
+          - forbidigo
