@@ -41,15 +41,15 @@ func main() {
 		os.Exit(0)
 	}
 	if v {
-		var verPrinter = printer.New()
-		var info = version.Get()
+		verPrinter := printer.New()
+		info := version.Get()
 		if err := verPrinter.PrintInfo(os.Stdout, info); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
 	}
 
-	var files, err = deleteFiles.Flatten(true)
+	files, err := deleteFiles.Flatten(true)
 	if err != nil {
 		log.Fatal("error flattening files: ", err)
 	}
@@ -61,12 +61,12 @@ func main() {
 
 // processDeleteFile loads a log file and processes every duplicate pair in it.
 func processDeleteFile(path string, alwaysDelete bool) {
-	var dedupedFiles, err = logger.ReadDeleteLogFile(path)
+	dedupedFiles, err := logger.ReadDeleteLogFile(path)
 	if err != nil {
 		log.Fatalf("error reading file: %s, err: %s", path, err)
 	}
 
-	var viewer = viewerForOS()
+	viewer := viewerForOS()
 
 	for i, pair := range dedupedFiles {
 		processPair(i, len(dedupedFiles), pair, alwaysDelete, viewer)
@@ -189,8 +189,7 @@ func closeImage(process *exec.Cmd) error {
 	}
 
 	if err := process.Wait(); err != nil {
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
+		if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 			return fmt.Errorf("error waiting for process: %w", err)
 		}
 	}

@@ -8,7 +8,7 @@ run:
   timeout: 10m
   tests: true
   modules-download-mode: readonly
-  go: "1.24"
+  go: "1.25"
 
 linters:
   default: all
@@ -22,8 +22,10 @@ linters:
     - whitespace
     - testpackage # should not use unexported functions and methods from source code in tests
     - mnd # magic numbers
-    - depguard # deps white list
+    - gomodguard # old version, replaced by gomodguard_v2
+    - depguard
     - exhaustruct # finds structures with uninitialized fields
+    - exhaustruct_v5 # finds structures with uninitialized fields
     - gomoddirectives # go.mod linting
     - cyclop # TEMP ... should be addressed
     - gochecknoglobals # who cares about prom globals
@@ -31,7 +33,7 @@ linters:
     - noctx # context not used in this codebase
     - gochecknoinits # we use init for prometheus metrics registration
     - noinlineerr # we don't care about inlining errors
-    - goconst # annoying making everything a constant
+    - goconst
   settings:
     revive:
       rules:
